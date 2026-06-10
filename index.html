@@ -182,26 +182,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 </head>
 <body>
 
-<!-- SETUP MODAL (shown on first load if no Script URL saved) -->
-<div id="setup-overlay">
-  <div id="setup-modal">
-    <h2>⚙️ Connect to Google Sheets</h2>
-    <p>This site stores all data in a Google Sheet so everyone in your pool sees the same live scores. Paste your Apps Script Web App URL below to get started.</p>
-    <div class="modal-steps">
-      <strong>Quick setup (5 min):</strong><br>
-      1. Open your Google Sheet → <strong>Extensions → Apps Script</strong><br>
-      2. Paste the Apps Script code (in the setup guide) → <strong>Save</strong><br>
-      3. Click <strong>Deploy → New Deployment → Web App</strong><br>
-      4. Set "Execute as: <strong>Me</strong>" and "Who has access: <strong>Anyone</strong>"<br>
-      5. Copy the Web App URL and paste it below
-    </div>
-    <input id="script-url-input" type="url" placeholder="https://script.google.com/macros/s/YOUR_ID/exec">
-    <div class="btn-row" style="justify-content:center">
-      <button class="btn btn-gold" onclick="saveScriptUrl()">✅ Connect & Start</button>
-      <button class="btn btn-ghost" onclick="skipSetup()">Use offline (local only)</button>
-    </div>
-  </div>
-</div>
+<!-- setup modal removed - script URL is hardcoded -->
 
 <!-- SYNC BAR -->
 <div id="sync-bar">
@@ -478,7 +459,7 @@ let S={
   draft:{},scores:{},teamStats:{},lastUpdated:null,
   draftLocked:false
 };
-let SCRIPT_URL='';
+let SCRIPT_URL='https://script.google.com/macros/s/AKfycbyB09yFr4HRtZCAzh7IQpRzyQwHkZn4_Q7gCdFwd-8kjZVWv-bF8JxLaeHm3JHjVDpVNg/exec';
 let syncTimer=null;
 let activeGroupFilter='ALL';
 let isSyncing=false;
@@ -565,24 +546,7 @@ function loadLocal(){
   try{SCRIPT_URL=localStorage.getItem('wc2026_script_url')||'';}catch(e){}
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// SETUP MODAL
-// ═══════════════════════════════════════════════════════════════════
-function saveScriptUrl(){
-  const val=document.getElementById('script-url-input').value.trim();
-  if(!val||!val.startsWith('https://')){toast('Please enter a valid https:// URL');return;}
-  SCRIPT_URL=val;
-  saveLocal();
-  document.getElementById('setup-overlay').classList.remove('show');
-  setSyncStatus('syncing','Connecting...');
-  syncRead().then(()=>startAutoSync());
-  toast('Connected! Syncing...');
-}
-function skipSetup(){
-  document.getElementById('setup-overlay').classList.remove('show');
-  setSyncStatus('ok','Offline mode — data saves locally only');
-  renderAll();
-}
+// (setup modal removed - URL is hardcoded)
 
 // ═══════════════════════════════════════════════════════════════════
 // SCORING ENGINE
@@ -749,7 +713,7 @@ function renderStandings(){
 // ═══════════════════════════════════════════════════════════════════
 // DRAFT LOCK
 // ═══════════════════════════════════════════════════════════════════
-const UNLOCK_PIN = '1994';  // Change this to your own PIN
+const UNLOCK_PIN = '2026';  // Change this to your own PIN
 
 function lockDraft(){
   if(S.draftLocked){toast('Already locked.');return;}
@@ -1012,14 +976,8 @@ function toast(msg){
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 loadLocal();
-if(!SCRIPT_URL){
-  document.getElementById('setup-overlay').classList.add('show');
-  setSyncStatus('error','Not connected — paste your Apps Script URL');
-  renderAll();
-}else{
-  setSyncStatus('syncing','Connecting...');
-  syncRead().then(()=>startAutoSync());
-}
+setSyncStatus('syncing','Connecting...');
+syncRead().then(()=>startAutoSync());
 </script>
 </body>
 </html>
