@@ -272,7 +272,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div class="btn-row" style="margin-bottom:14px">
     <button class="btn btn-gold" onclick="saveDraft()">💾 Save Draft</button>
     <button class="btn btn-ghost" onclick="autoDraft()">🎲 Random Draft</button>
-    <span style="color:var(--muted);font-size:12px;align-self:center">6 teams per player · 48 teams total</span>
+    <span id="draft-info" style="color:var(--muted);font-size:12px;align-self:center"></span>
   </div>
   <div id="draft-board"></div>
 </div>
@@ -320,8 +320,10 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     </div>
     <div class="rules-card"><h3>🐍 Draft</h3>
       <div class="rule-row"><span>Format</span><span class="rv" style="font-size:13px">Snake</span></div>
-      <div class="rule-row"><span>Teams per player</span><span class="rv">6</span></div>
+      <div class="rule-row"><span>Total teams</span><span class="rv">48</span></div>
+      <div class="rule-row"><span>Max players</span><span class="rv">16</span></div>
       <div class="rule-row"><span>Max dark horses</span><span class="rv">3 per player</span></div>
+      <div class="rule-row"><span>Unowned teams</span><span class="rv" style="font-size:13px">Don't score</span></div>
     </div>
     <div class="rules-card"><h3>⚖️ Tie-breakers</h3>
       <div class="rule-row"><span>1st</span><span class="rv" style="font-size:13px">Goals scored</span></div>
@@ -337,7 +339,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div class="admin-grid">
     <div class="admin-card"><label>Pool Name</label><input id="cfg-name" type="text"></div>
     <div class="admin-card"><label>Buy-in per Player ($)</label><input id="cfg-buyin" type="number" min="1"><div class="hint">Prize pool auto-calculates</div></div>
-    <div class="admin-card"><label>Number of Players</label><input id="cfg-players" type="number" min="2" max="16"></div>
+    <div class="admin-card"><label>Number of Players</label><input id="cfg-players" type="number" min="2" max="16" onchange="updatePlayerHint()"><div class="hint" id="players-hint"></div></div>
     <div class="admin-card"><label>Dark Horse Threshold (rank)</label><input id="cfg-dh" type="number" min="1"><div class="hint">Above this = ×1.5 group pts</div></div>
   </div>
   <div class="section-title">Player Names</div>
@@ -438,9 +440,13 @@ const STAGE_C={"Champion":"#D4A843","Runner-Up":"#8899aa","Semi-Final":"#B07840"
 // ═══════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════
+// teamsPerPlayer: how many teams each player drafts (auto-calculated)
+function teamsPerPlayer(numPlayers){ return Math.floor(48/numPlayers); }
+function unownedCount(numPlayers){ return 48 - (teamsPerPlayer(numPlayers)*numPlayers); }
+
 let S={
   config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
-  playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina"],
+  playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
   draft:{},scores:{},teamStats:{},lastUpdated:null
 };
 let SCRIPT_URL='';
@@ -715,21 +721,49 @@ function renderStandings(){
 // RENDER DRAFT
 // ═══════════════════════════════════════════════════════════════════
 function renderDraft(){
-  const players=(S.playerNames||[]).slice(0,S.config.players||8);
+  const numP=S.config.players||8;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  const tpp=teamsPerPlayer(numP);
+  const unowned=unownedCount(numP);
+  // Update info text
+  const infoEl=document.getElementById('draft-info');
+  if(infoEl){
+    infoEl.innerHTML=`${tpp} teams per player · ${numP} players · 48 teams total`
+      +(unowned>0?` · <span style="color:var(--coral)">${unowned} unowned</span>`:'');
+  }
   const tierL=r=>r<=4?'S':r<=8?'A':r<=16?'B':r<=24?'C':r<=40?'D':'E';
   const tierC=r=>r<=4?'#c9a00a':r<=8?'#2a6a3a':r<=16?'#1a4a6a':r<=24?'#4a3a0a':r<=40?'#3a2a0a':'#3a0a0a';
   let html='';
+  // Count assignments per player for validation
+  const assignCounts={};
+  players.forEach(p=>assignCounts[p]=0);
+  TEAMS.forEach(t=>{if(S.draft[t.name]&&assignCounts[S.draft[t.name]]!==undefined)assignCounts[S.draft[t.name]]++;});
+
+  // Player allocation bar
+  html+=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--line)">
+    <span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px">DRAFT ALLOCATION (target: ${tpp} per player)</span>
+    ${players.map(p=>{
+      const c=assignCounts[p]||0;
+      const over=c>tpp,under=c<tpp,ok=c===tpp;
+      const col=ok?'#5a9e6a':over?'var(--coral)':'var(--muted)';
+      return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${col}40;background:${col}15;color:${col};font-weight:600">${p}: ${c}/${tpp}</span>`;
+    }).join('')}
+    ${unowned>0?`<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid var(--coral)40;background:var(--coral)10;color:var(--coral);font-weight:600;margin-left:auto">⚠️ ${unowned} unowned</span>`:''}
+  </div>`;
+
   ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
     html+=`<div class="group-header-label">GROUP ${g}</div><div class="draft-grid">`;
     TEAMS.filter(t=>t.group===g).forEach(t=>{
       const isDH=t.rank>(S.config.dh||20);
       const owner=S.draft[t.name]||'';
-      const opts=`<option value="">— Unassigned —</option>`+players.map(p=>`<option value="${p}"${owner===p?' selected':''}>${p}</option>`).join('');
-      html+=`<div class="draft-card ${isDH?'dh':''}">
+      const isUnowned=!owner;
+      const opts=`<option value="">— Unowned —</option>`+players.map(p=>`<option value="${p}"${owner===p?' selected':''}>${p}</option>`).join('');
+      html+=`<div class="draft-card ${isDH?'dh':''}" style="${isUnowned?'opacity:0.6':''}">
         <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
         <div style="display:flex;gap:5px;align-items:center">
           <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
           ${isDH?'<span class="dh-badge">🌶️ ×1.5</span>':''}
+          ${isUnowned?'<span style="font-size:10px;color:var(--muted)">unowned</span>':''}
         </div>
         <select class="draft-select" data-team="${t.name}">${opts}</select>
       </div>`;
@@ -748,10 +782,12 @@ function saveDraft(){
   toast('Draft saved & synced ✓');
 }
 function autoDraft(){
-  const players=(S.playerNames||[]).slice(0,S.config.players||8);
+  const numP=S.config.players||8;
+  const players=(S.playerNames||[]).slice(0,numP);
+  const tpp=teamsPerPlayer(numP);
   const shuffled=[...TEAMS].sort(()=>Math.random()-0.5);
   S.draft={};
-  for(let round=0;round<6;round++){
+  for(let round=0;round<tpp;round++){
     const order=round%2===0?[...players]:[...players].reverse();
     order.forEach((p,i)=>{const idx=round*players.length+(round%2===0?i:players.length-1-i);if(shuffled[idx])S.draft[shuffled[idx].name]=p;});
   }
@@ -762,21 +798,36 @@ function autoDraft(){
 // ═══════════════════════════════════════════════════════════════════
 // RENDER ADMIN
 // ═══════════════════════════════════════════════════════════════════
+function updatePlayerHint(){
+  const n=parseInt(document.getElementById('cfg-players')?.value)||8;
+  const tpp=teamsPerPlayer(n);
+  const u=unownedCount(n);
+  const el=document.getElementById('players-hint');
+  if(el) el.innerHTML=`${tpp} teams each · ${u>0?`<span style="color:var(--coral)">${u} teams unowned</span>`:'all 48 teams owned 🎉'}`;
+  // Show/hide extra player name fields
+  const grid=document.getElementById('player-names-grid');
+  if(grid) Array.from(grid.children).forEach((card,i)=>{
+    card.style.display=i<n?'':'none';
+  });
+}
 function renderAdmin(){
   document.getElementById('cfg-name').value=S.config.name||'';
   document.getElementById('cfg-buyin').value=S.config.buyin||50;
   document.getElementById('cfg-players').value=S.config.players||8;
   document.getElementById('cfg-dh').value=S.config.dh||20;
   const n=S.config.players||8;
-  document.getElementById('player-names-grid').innerHTML=Array.from({length:n},(_,i)=>`
-    <div class="admin-card"><label>Player ${i+1}</label>
+  // Always render all 16 slots, show/hide based on player count
+  document.getElementById('player-names-grid').innerHTML=Array.from({length:16},(_,i)=>`
+    <div class="admin-card" style="display:${i<n?'':'none'}"><label>Player ${i+1}</label>
     <input type="text" id="pname-${i}" value="${(S.playerNames||[])[i]||''}"></div>`).join('');
+  updatePlayerHint();
   // KO tracker
   document.getElementById('ko-tracker').innerHTML=TEAMS.map(t=>{
     const ts=S.teamStats[t.name]||{};
     const k=t.name.replace(/\W/g,'_');
+    const owner=S.draft[t.name]||'';
     return `<div class="admin-card" style="padding:10px 12px">
-      <label>${t.flag} ${t.name}</label>
+      <label>${t.flag} ${t.name} ${owner?`<span style="color:var(--muted);font-weight:400">(${owner})</span>`:''}</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
         <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Stage reached</div>
           <select class="draft-select" id="fin-${k}" style="font-size:11px">
@@ -800,7 +851,8 @@ function saveConfig(){
   S.config.buyin=parseInt(document.getElementById('cfg-buyin').value)||50;
   S.config.players=parseInt(document.getElementById('cfg-players').value)||8;
   S.config.dh=parseInt(document.getElementById('cfg-dh').value)||20;
-  S.playerNames=Array.from({length:S.config.players},(_,i)=>document.getElementById(`pname-${i}`)?.value||`Player ${i+1}`);
+  // Save all 16 slots so names aren't lost when toggling player count
+  S.playerNames=Array.from({length:16},(_,i)=>document.getElementById(`pname-${i}`)?.value||'');
   saveLocal();if(SCRIPT_URL)syncWrite();
   renderAll();toast('Settings saved ✓');
 }
@@ -827,7 +879,7 @@ function saveKO(){
 function resetAll(){
   if(!confirm('Reset ALL data? Cannot be undone.'))return;
   S={config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
-     playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina"],
+     playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
      draft:{},scores:{},teamStats:{},lastUpdated:null};
   saveLocal();if(SCRIPT_URL)syncWrite();
   renderAll();toast('All data reset.');
