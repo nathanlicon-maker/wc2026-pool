@@ -249,12 +249,24 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     <button class="gf-btn" id="view-all" onclick="setScoreView('all')">All Matches</button>
     <span id="scores-count" style="margin-left:auto;font-size:11px;color:var(--muted)"></span>
   </div>
+  <!-- MY SCHEDULE -->
+  <div id="my-schedule-section" style="margin-bottom:20px;display:none">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--gold);letter-spacing:0.05em;margin-bottom:10px">👤 MY SCHEDULE</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="who-am-i-btns"></div>
+    <div id="my-matches-container" class="matches-grid"></div>
+  </div>
   <div id="matches-container" class="matches-grid"></div>
 </div>
 
 <!-- STANDINGS -->
 <div id="pane-standings" class="pane">
   <div class="section-title">All 48 Teams <small>sorted by points</small></div>
+  <!-- PLAYER FILTER -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center">
+    <span style="font-size:12px;font-weight:600;color:var(--muted)">Filter:</span>
+    <button class="gf-btn active" id="teams-filter-all" onclick="setTeamsFilter('')">All Teams</button>
+    <div id="teams-filter-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
   <div style="overflow-x:auto">
     <table class="standings-table">
       <thead><tr>
@@ -714,6 +726,7 @@ function updateTicker(lb){
 // RENDER SCORES
 // ═══════════════════════════════════════════════════════════════════
 let scoreView='today';
+let myName='';
 
 function setScoreView(v){
   scoreView=v;
@@ -722,6 +735,74 @@ function setScoreView(v){
     if(el)el.classList.toggle('active',k===v);
   });
   renderScores();
+}
+
+function setMyName(name){
+  myName=name===myName?'':name;
+  try{localStorage.setItem('wc2026_myName',myName);}catch(e){}
+  renderMySchedule();
+  renderScores();
+  // Also sync teams filter
+  if(myName){teamsFilter=myName;renderStandings();}
+}
+
+function renderMySchedule(){
+  const section=document.getElementById('my-schedule-section');
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  const btnContainer=document.getElementById('who-am-i-btns');
+  if(btnContainer){
+    btnContainer.innerHTML=`<span style="font-size:12px;font-weight:600;color:var(--muted);align-self:center;margin-right:4px">I am:</span>`+
+      players.map(p=>`<button onclick="setMyName('${p}')" style="padding:5px 14px;border-radius:20px;border:2px solid ${myName===p?'var(--gold)':'var(--line)'};background:${myName===p?'rgba(212,168,67,0.15)':'transparent'};color:${myName===p?'var(--gold)':'var(--muted)'};font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s">${p}</button>`).join('');
+  }
+  if(!myName||!section){if(section)section.style.display='none';return;}
+  section.style.display='block';
+  const myTeams=TEAMS.filter(t=>S.draft[t.name]===myName);
+  if(!myTeams.length){
+    document.getElementById('my-matches-container').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">No teams assigned yet.</div>';
+    return;
+  }
+  const myTeamNames=new Set(myTeams.map(t=>t.name));
+  const myMatches=MATCHES.filter(m=>myTeamNames.has(m.home)||myTeamNames.has(m.away)).sort((a,b)=>new Date(a.dt+':00-05:00')-new Date(b.dt+':00-05:00'));
+  if(!myMatches.length){document.getElementById('my-matches-container').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">No matches found.</div>';return;}
+  const teamSummary=myTeams.map(t=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:rgba(212,168,67,0.1);border:1px solid rgba(212,168,67,0.3);font-size:12px;font-weight:600;color:var(--gold)">${t.flag} ${t.name}</span>`).join('');
+  let html=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${teamSummary}</div>`;
+  const byDay={};
+  myMatches.forEach(m=>{
+    const d=new Date(m.dt+':00-05:00');
+    const isToday=d.toDateString()===new Date().toDateString();
+    const dayStr=isToday?'Today — '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    if(!byDay[dayStr])byDay[dayStr]=[];
+    byDay[dayStr].push(m);
+  });
+  for(const[day,matches] of Object.entries(byDay)){
+    html+=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.05em;padding:8px 0 3px;border-bottom:1px solid rgba(212,168,67,0.2);margin-bottom:6px">${day}</div>`;
+    matches.forEach(m=>{
+      const sc=S.scores[m.id]||{};
+      const hg=sc.hg??'',ag=sc.ag??'';
+      const hasH=hg!=='',hasA=ag!=='';
+      const status=getMatchStatus(m);
+      const d=new Date(m.dt+':00-05:00');
+      const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const dot=status==='completed'?'✅':status==='today'?'🔴':'🕐';
+      const ht=TEAMS.find(t=>t.name===m.home),at=TEAMS.find(t=>t.name===m.away);
+      const homeIsmine=myTeamNames.has(m.home),awayIsmine=myTeamNames.has(m.away);
+      let winner='';
+      if(hasH&&hasA){const hi=+hg,ai=+ag;winner=hi>ai?`🏆 ${m.home} win`:ai>hi?`🏆 ${m.away} win`:'<span class="draw">Draw</span>';}
+      html+=`<div class="match-card" style="border-color:rgba(212,168,67,0.3);${status==='completed'?'opacity:0.75':''}">
+        <div class="match-header"><span class="match-stage">${dot} ${timeStr} CT · Grp ${m.group}</span><span class="match-group" style="font-size:11px;color:var(--muted)">${m.venue}</span></div>
+        <div class="match-row">
+          <div class="match-team home" style="color:${homeIsmine?'var(--gold)':'var(--white)'};font-weight:${homeIsmine?'700':'600'}">${ht?.flag||''} ${m.home}${homeIsmine?' ⭐':''}</div>
+          <input class="score-input ${hasH?'has-score':''}" type="number" min="0" max="20" value="${hg}" placeholder="—" onchange="setScore(${m.id},'hg',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
+          <div class="score-sep">:</div>
+          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
+          <div class="match-team" style="color:${awayIsmine?'var(--gold)':'var(--white)'};font-weight:${awayIsmine?'700':'600'}">${m.away}${awayIsmine?' ⭐':''} ${at?.flag||''}</div>
+        </div>
+        ${winner?`<div class="match-winner">${winner}</div>`:''}
+      </div>`;
+    });
+  }
+  document.getElementById('my-matches-container').innerHTML=html;
 }
 
 function getMatchStatus(m){
@@ -823,25 +904,68 @@ function autoCalcStats(){
 // ═══════════════════════════════════════════════════════════════════
 // RENDER STANDINGS
 // ═══════════════════════════════════════════════════════════════════
+let teamsFilter=''; // empty = all, otherwise = player name
+
+function setTeamsFilter(name){
+  teamsFilter=name;
+  // Update button styles
+  const allBtn=document.getElementById('teams-filter-all');
+  if(allBtn)allBtn.classList.toggle('active',!name);
+  document.querySelectorAll('.teams-filter-player-btn').forEach(b=>{
+    b.style.borderColor=b.dataset.player===name?'var(--gold)':'var(--line)';
+    b.style.background=b.dataset.player===name?'rgba(212,168,67,0.15)':'transparent';
+    b.style.color=b.dataset.player===name?'var(--gold)':'var(--muted)';
+  });
+  renderStandings();
+}
+
 function renderStandings(){
   const stageMap={W:'Champion',RU:'Runner-Up',SF:'Semi-Final',QF:'Quarter-Final',R16:'Round of 16',R32:'Round of 32',GS:'Group Stage',GX:'Eliminated'};
-  const sorted=[...TEAMS].map(t=>({...t,pts:calcTeamPts(t.name),ts:S.teamStats[t.name]||{},owner:S.draft[t.name]||'—'})).sort((a,b)=>b.pts-a.pts);
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+
+  // Render player filter buttons
+  const filterBtns=document.getElementById('teams-filter-btns');
+  if(filterBtns){
+    filterBtns.innerHTML=players.map(p=>`
+      <button class="gf-btn teams-filter-player-btn" data-player="${p}"
+        onclick="setTeamsFilter('${p}')"
+        style="border-color:${teamsFilter===p?'var(--gold)':'var(--line)'};background:${teamsFilter===p?'rgba(212,168,67,0.15)':'transparent'};color:${teamsFilter===p?'var(--gold)':'var(--muted)'}">
+        ${p}
+      </button>`).join('');
+  }
+
+  let sorted=[...TEAMS].map(t=>({...t,pts:calcTeamPts(t.name),ts:S.teamStats[t.name]||{},owner:S.draft[t.name]||'—'})).sort((a,b)=>b.pts-a.pts);
+
+  // Apply player filter
+  if(teamsFilter) sorted=sorted.filter(t=>t.owner===teamsFilter);
+
+  // Show total/filtered count
+  const allBtn=document.getElementById('teams-filter-all');
+  if(allBtn)allBtn.textContent=`All Teams (${TEAMS.length})`;
+
+  if(!sorted.length){
+    document.getElementById('standings-body').innerHTML=`<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--muted)">No teams assigned to ${teamsFilter} yet.</td></tr>`;
+    return;
+  }
+
   document.getElementById('standings-body').innerHTML=sorted.map((t,i)=>{
     const isDH=t.rank>(S.config.dh||20);
     const fin=t.ts.final||'';
     const sl=stageMap[fin]||'Group Stage';
     const sc=STAGE_C[sl]||'#333';
-    return `<tr>
+    const isMyTeam=teamsFilter&&t.owner===teamsFilter;
+    return `<tr style="${isMyTeam?'background:rgba(212,168,67,0.05)':''}">
       <td style="color:var(--muted);font-weight:600">${i+1}</td>
       <td class="flag-cell">${t.flag}</td>
-      <td style="font-weight:600">${t.name} ${isDH?'<span class="dh-badge">×1.5</span>':''}</td>
+      <td style="font-weight:600;color:${isMyTeam?'var(--gold)':'var(--white)'}">${t.name} ${isDH?'<span class="dh-badge">×1.5</span>':''}</td>
       <td><span class="owner-badge">${t.owner}</span></td>
       <td style="text-align:center;font-weight:600">${t.group}</td>
       <td><span class="stage-badge" style="background:${sc}20;border:1px solid ${sc}50;color:${sc}">${sl}</span></td>
       <td style="text-align:center">${t.ts.gw||0}</td><td style="text-align:center">${t.ts.gd||0}</td><td style="text-align:center">${t.ts.gl||0}</td>
       <td style="text-align:center">${t.ts.gf||0}</td><td style="text-align:center">${t.ts.cs||0}</td>
       <td style="text-align:center">${t.ts.bonus||0}</td>
-      <td class="pts-cell">${t.pts}</td>
+      <td class="pts-cell" style="color:${isMyTeam?'var(--gold)':'var(--gold)'}">${t.pts}</td>
     </tr>`;
   }).join('');
 }
@@ -1361,8 +1485,8 @@ function showTab(name,btn){
   document.getElementById('pane-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='leaderboard')renderLeaderboard();
-  if(name==='scores')renderScores();
-  if(name==='standings')renderStandings();
+  if(name==='scores'){renderScores();renderMySchedule();}
+  if(name==='standings'){renderStandings();}
   if(name==='draft')renderDraft();
   if(name==='admin')renderAdmin();
   if(name==='power')renderPowerRankings();
@@ -1378,6 +1502,8 @@ function toast(msg){
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 loadLocal();
+try{myName=localStorage.getItem('wc2026_myName')||'';}catch(e){}
+try{if(myName)teamsFilter=myName;}catch(e){}
 setSyncStatus('syncing','Connecting...');
 syncRead().then(()=>startAutoSync());
 </script>
