@@ -187,8 +187,8 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <!-- SYNC BAR -->
 <div id="sync-bar">
   <div id="sync-status">
-    <div id="sync-dot"></div>
-    <span id="sync-text">Connected to Google Sheets</span>
+    <div id="sync-dot" class="syncing"></div>
+    <span id="sync-text">Connecting to database...</span>
   </div>
   <button class="sync-btn" onclick="syncNow()">↻ Sync Now</button>
   <span id="last-sync" style="margin-left:8px;font-size:11px"></span>
@@ -459,13 +459,15 @@ let S={
   draft:{},scores:{},teamStats:{},lastUpdated:null,
   draftLocked:false
 };
-let SCRIPT_URL='https://script.google.com/macros/s/AKfycbx_nNezbi80xU6Z0FXJ0i2WGj1bU1HZ0rrwQWaJic17S15f3n68qzS4puWy1YX-ePSEoA/exec';
+let JSONBIN_KEY='$2a$10$2aGlgg1W28gK/lxQs0b16OtUkNJZd7vykGcJPgIyfJU2NIAS6Lu4u';
+let JSONBIN_ID='6a2a0b4eda38895dfeaa6c49';
+let JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_ID;
 let syncTimer=null;
 let activeGroupFilter='ALL';
 let isSyncing=false;
 
 // ═══════════════════════════════════════════════════════════════════
-// GOOGLE SHEETS SYNC
+// JSONBIN SYNC — full CORS support, works on all mobile browsers
 // ═══════════════════════════════════════════════════════════════════
 function setSyncStatus(state,msg){
   const dot=document.getElementById('sync-dot');
@@ -474,27 +476,19 @@ function setSyncStatus(state,msg){
   txt.textContent=msg;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// GOOGLE SHEETS SYNC — text/plain skips CORS preflight, works mobile
-// ═══════════════════════════════════════════════════════════════════
-
 async function syncRead(){
-  if(!SCRIPT_URL)return;
   setSyncStatus('syncing','Fetching latest data...');
   isSyncing=true;
   try{
-    // GET with no custom headers — no preflight, works on all browsers including mobile
-    const res=await fetch(SCRIPT_URL+'?action=read&t='+Date.now(),{
+    const res=await fetch(JSONBIN_URL+'/latest',{
       method:'GET',
-      redirect:'follow'
+      headers:{
+        'X-Master-Key':JSONBIN_KEY,
+        'X-Bin-Meta':'false'
+      }
     });
-    const text=await res.text();
-    // Apps Script sometimes wraps in HTML on first load — strip it
-    const jsonStart=text.indexOf('{');
-    const jsonEnd=text.lastIndexOf('}');
-    if(jsonStart===-1)throw new Error('No JSON in response');
-    const data=JSON.parse(text.slice(jsonStart,jsonEnd+1));
-    if(data.error)throw new Error(data.error);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
     if(data.config)S.config={...S.config,...data.config};
     if(data.playerNames&&data.playerNames.length)S.playerNames=data.playerNames;
     if(data.draft)S.draft=data.draft;
@@ -503,41 +497,37 @@ async function syncRead(){
     if(typeof data.draftLocked!=='undefined')S.draftLocked=data.draftLocked;
     S.lastUpdated=data.lastUpdated||new Date().toISOString();
     saveLocal();
-    setSyncStatus('ok','Synced with Google Sheets');
+    setSyncStatus('ok','Live — synced ✓');
     updateLastSync();
     renderAll();
   }catch(e){
-    // Fall back to cached local data silently
     setSyncStatus('error','Using cached data — tap ↻ to retry');
-    console.error('Sync read error:',e);
+    console.error('Read error:',e);
     renderAll();
   }
   isSyncing=false;
 }
 
 async function syncWrite(){
-  if(!SCRIPT_URL)return;
   setSyncStatus('syncing','Saving...');
   try{
-    // text/plain content-type skips CORS preflight — key trick for mobile
-    const res=await fetch(SCRIPT_URL,{
-      method:'POST',
-      headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'write',data:S}),
-      redirect:'follow'
+    S.lastUpdated=new Date().toISOString();
+    const res=await fetch(JSONBIN_URL,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key':JSONBIN_KEY
+      },
+      body:JSON.stringify(S)
     });
-    const text=await res.text();
-    const jsonStart=text.indexOf('{');
-    const jsonEnd=text.lastIndexOf('}');
-    if(jsonStart===-1)throw new Error('No JSON in response');
-    const data=JSON.parse(text.slice(jsonStart,jsonEnd+1));
-    if(data.error)throw new Error(data.error);
+    if(!res.ok)throw new Error('HTTP '+res.status);
     setSyncStatus('ok','Saved ✓');
     updateLastSync();
-  }catch(e){
     saveLocal();
-    setSyncStatus('ok','Saved locally');
-    console.warn('Write error:',e);
+  }catch(e){
+    setSyncStatus('error','Save failed — check connection');
+    console.error('Write error:',e);
+    saveLocal();
   }
 }
 
@@ -552,7 +542,7 @@ function updateLastSync(){
 // Auto-sync every 60 seconds
 function startAutoSync(){
   if(syncTimer)clearInterval(syncTimer);
-  if(SCRIPT_URL) syncTimer=setInterval(syncRead, 60000);
+  syncTimer=setInterval(syncRead,60000);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -560,11 +550,9 @@ function startAutoSync(){
 // ═══════════════════════════════════════════════════════════════════
 function saveLocal(){
   try{localStorage.setItem('wc2026_state',JSON.stringify(S));}catch(e){}
-  try{localStorage.setItem('wc2026_script_url',SCRIPT_URL);}catch(e){}
 }
 function loadLocal(){
   try{const d=localStorage.getItem('wc2026_state');if(d)S=JSON.parse(d);}catch(e){}
-  try{SCRIPT_URL=localStorage.getItem('wc2026_script_url')||'';}catch(e){}
 }
 
 // (setup modal removed - URL is hardcoded)
@@ -681,7 +669,7 @@ function setScore(id,side,v){
   if(!S.scores[id])S.scores[id]={};
   S.scores[id][side]=v===''?'':parseInt(v);
   autoCalcStats();saveLocal();
-  if(SCRIPT_URL)syncWrite();
+  syncWrite();
   renderLeaderboard();renderScores();renderStandings();
   toast('Score saved ✓');
 }
@@ -740,7 +728,7 @@ function lockDraft(){
   if(S.draftLocked){toast('Already locked.');return;}
   if(!confirm('Lock the draft? Players will no longer be able to reassign teams.\n\nUnlock PIN: ' + UNLOCK_PIN + '\n\nSave this PIN somewhere safe!'))return;
   S.draftLocked=true;
-  saveLocal();if(SCRIPT_URL)syncWrite();
+  saveLocal();syncWrite();
   applyDraftLockUI();
   renderDraft();
   toast('🔒 Draft locked! PIN to unlock: ' + UNLOCK_PIN);
@@ -751,7 +739,7 @@ function promptUnlock(){
   if(pin===null)return; // cancelled
   if(pin===UNLOCK_PIN){
     S.draftLocked=false;
-    saveLocal();if(SCRIPT_URL)syncWrite();
+    saveLocal();syncWrite();
     applyDraftLockUI();
     renderDraft();
     toast('🔓 Draft unlocked.');
@@ -862,7 +850,7 @@ function saveDraft(){
     if(s.value)S.draft[s.dataset.team]=s.value;else delete S.draft[s.dataset.team];
   });
   saveLocal();
-  if(SCRIPT_URL)syncWrite();
+  syncWrite();
   renderLeaderboard();renderStandings();
   toast('Draft saved & synced ✓');
 }
@@ -877,7 +865,7 @@ function autoDraft(){
     const order=round%2===0?[...players]:[...players].reverse();
     order.forEach((p,i)=>{const idx=round*players.length+(round%2===0?i:players.length-1-i);if(shuffled[idx])S.draft[shuffled[idx].name]=p;});
   }
-  saveLocal();if(SCRIPT_URL)syncWrite();
+  saveLocal();syncWrite();
   renderDraft();renderLeaderboard();toast('Random draft done ✓');
 }
 
@@ -940,7 +928,7 @@ function saveConfig(){
   S.config.dh=parseInt(document.getElementById('cfg-dh').value)||20;
   // Save all 16 slots so names aren't lost when toggling player count
   S.playerNames=Array.from({length:16},(_,i)=>document.getElementById(`pname-${i}`)?.value||'');
-  saveLocal();if(SCRIPT_URL)syncWrite();
+  saveLocal();syncWrite();
   renderAll();toast('Settings saved ✓');
 }
 function saveKO(){
@@ -960,7 +948,7 @@ function saveKO(){
     if(['QF','SF','RU','W'].includes(fin))ts.qf=1;
     if(['SF','RU','W'].includes(fin))ts.sf=1;
   });
-  saveLocal();if(SCRIPT_URL)syncWrite();
+  saveLocal();syncWrite();
   renderLeaderboard();renderStandings();toast('KO results saved & synced ✓');
 }
 function resetAll(){
@@ -968,7 +956,7 @@ function resetAll(){
   S={config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
      playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
      draft:{},scores:{},teamStats:{},lastUpdated:null};
-  saveLocal();if(SCRIPT_URL)syncWrite();
+  saveLocal();syncWrite();
   renderAll();toast('All data reset.');
 }
 
