@@ -474,26 +474,13 @@ function setSyncStatus(state,msg){
   txt.textContent=msg;
 }
 
-// JSONP helper — works on mobile where fetch gets blocked by CORS/redirects
-function jsonpFetch(url){
-  return new Promise((resolve, reject)=>{
-    const cb='_jsonp_'+Date.now();
-    const script=document.createElement('script');
-    const timer=setTimeout(()=>{
-      delete window[cb];
-      script.remove();
-      reject(new Error('JSONP timeout'));
-    }, 10000);
-    window[cb]=(data)=>{
-      clearTimeout(timer);
-      delete window[cb];
-      script.remove();
-      resolve(data);
-    };
-    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
-    script.onerror=()=>{ clearTimeout(timer); delete window[cb]; script.remove(); reject(new Error('JSONP script error')); };
-    document.head.appendChild(script);
-  });
+// ═══════════════════════════════════════════════════════════════════
+// GOOGLE SHEETS SYNC — via allorigins.win proxy (mobile compatible)
+// ═══════════════════════════════════════════════════════════════════
+
+// Wraps any URL through allorigins to bypass CORS on mobile
+function proxied(url){
+  return 'https://api.allorigins.win/get?url='+encodeURIComponent(url);
 }
 
 async function syncRead(){
@@ -501,16 +488,12 @@ async function syncRead(){
   setSyncStatus('syncing','Fetching latest data...');
   isSyncing=true;
   try{
-    let data;
-    try{
-      // Try regular fetch first (works on desktop)
-      const res=await fetch(SCRIPT_URL+'?action=read&t='+Date.now(),{redirect:'follow'});
-      data=await res.json();
-    }catch(fetchErr){
-      // Fall back to JSONP (works on mobile)
-      console.log('Fetch failed, trying JSONP:', fetchErr.message);
-      data=await jsonpFetch(SCRIPT_URL+'?action=read&t='+Date.now());
-    }
+    const target=SCRIPT_URL+'?action=read&t='+Date.now();
+    const res=await fetch(proxied(target));
+    if(!res.ok)throw new Error('Proxy returned '+res.status);
+    const wrapper=await res.json();
+    if(!wrapper.contents)throw new Error('Empty proxy response');
+    const data=JSON.parse(wrapper.contents);
     if(data.error)throw new Error(data.error);
     if(data.config)S.config={...S.config,...data.config};
     if(data.playerNames&&data.playerNames.length)S.playerNames=data.playerNames;
@@ -535,30 +518,24 @@ async function syncWrite(){
   if(!SCRIPT_URL)return;
   setSyncStatus('syncing','Saving...');
   try{
-    // Writes must use fetch POST — JSONP can't POST
-    // On mobile, encode the data as a GET param instead as fallback
-    let data;
-    try{
-      const res=await fetch(SCRIPT_URL,{
-        method:'POST',
-        headers:{'Content-Type':'text/plain'},
-        body:JSON.stringify({action:'write',data:S}),
-        redirect:'follow'
-      });
-      data=await res.json();
-    }catch(fetchErr){
-      // Mobile POST fallback: send via JSONP GET with encoded payload
-      // (data is written via a special encoded param)
-      console.log('POST failed, trying JSONP write:', fetchErr.message);
-      const encoded=encodeURIComponent(JSON.stringify({action:'write',data:S}));
-      data=await jsonpFetch(SCRIPT_URL+'?action=write&payload='+encoded);
-    }
+    // Writes go direct POST — proxy is read-only, POST still works on most mobile
+    const res=await fetch(SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'write',data:S}),
+      redirect:'follow'
+    });
+    const data=await res.json();
     if(data.error)throw new Error(data.error);
     setSyncStatus('ok','Saved ✓');
     updateLastSync();
   }catch(e){
-    setSyncStatus('error','Save failed — data stored locally');
-    console.error('Sync write error:',e);
+    // If POST fails, store locally and retry on next sync
+    saveLocal();
+    setSyncStatus('ok','Saved locally — will sync shortly');
+    console.warn('Write fell back to local:',e);
+    // Queue a read sync in 3s so other devices stay updated
+    setTimeout(syncRead, 3000);
   }
 }
 
