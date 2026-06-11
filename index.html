@@ -212,6 +212,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="leaderboard" onclick="showTab('leaderboard',this)">🏅 Leaderboard</button>
   <button class="tab-btn" data-tab="scores"      onclick="showTab('scores',this)">📊 Scores</button>
+  <button class="tab-btn" data-tab="power"       onclick="showTab('power',this)">⚡ Power Rankings</button>
   <button class="tab-btn" data-tab="standings"   onclick="showTab('standings',this)">📋 Teams</button>
   <button class="tab-btn" data-tab="draft"       onclick="showTab('draft',this)">🌍 Draft</button>
   <button class="tab-btn" data-tab="rules"       onclick="showTab('rules',this)">📖 Rules</button>
@@ -225,7 +226,20 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div id="leaderboard-list" class="leaderboard"></div>
 </div>
 
-<!-- SCORES -->
+<!-- POWER RANKINGS -->
+<div id="pane-power" class="pane">
+  <div class="section-title">⚡ Power Rankings <small>current pts + future potential</small></div>
+  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:11px 15px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7">
+    <strong style="color:var(--gold)">How it works:</strong>
+    Power Score = Current Points + Potential Points from remaining teams still alive.
+    Ceiling = max pts if all your remaining teams win everything.
+    Floor = pts if all remaining teams exit next round.
+    Tier: 🔥 Hot (top 3) · ✅ Solid (mid) · ❄️ Cold (bottom 3)
+  </div>
+  <div id="power-rankings-content"></div>
+</div>
+  
+  <!-- SCORES -->
 <div id="pane-scores" class="pane">
   <div class="section-title">Match Results <small>enter scores as games finish</small></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
@@ -1073,6 +1087,107 @@ function resetAll(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// POWER RANKINGS ENGINE
+// ═══════════════════════════════════════════════════════════════════
+function maxRemainingPts(teamName){
+  const t=TEAMS.find(x=>x.name===teamName);
+  if(!t)return 0;
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  const isDH=t.rank>(S.config.dh||20);
+  if(['GS','GX'].includes(fin))return 0;
+  const koMax=8+10+15+20+40;
+  const groupRemaining=3*2;
+  if(!fin)return Math.round((groupRemaining*5+3*3)*(isDH?1.5:1)+koMax*2);
+  if(fin==='W'||fin==='RU'||fin==='3P')return 0;
+  const stageMax={R32:10+15+20+40,R16:15+20+40,QF:20+40,SF:40};
+  return Math.round((stageMax[fin]||0)+10);
+}
+function minRemainingPts(teamName){
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  if(['GS','GX','W','RU','3P'].includes(fin))return 0;
+  if(!fin)return 0;
+  const stageMin={R32:0,R16:0,QF:0,SF:20};
+  return stageMin[fin]||0;
+}
+function isTeamAlive(teamName){
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  return !['GS','GX'].includes(fin);
+}
+function calcPowerScore(playerName){
+  const teams=playerTeams(playerName);
+  const currentPts=calcPlayerPts(playerName);
+  let potential=0,ceiling=0,floor=0,aliveCount=0;
+  teams.forEach(t=>{
+    if(isTeamAlive(t.name)){
+      aliveCount++;
+      potential+=maxRemainingPts(t.name)*0.4;
+      ceiling+=maxRemainingPts(t.name);
+      floor+=minRemainingPts(t.name);
+    }
+  });
+  return{currentPts,potential:Math.round(potential),powerScore:Math.round(currentPts+potential),ceiling:currentPts+ceiling,floor:currentPts+floor,aliveCount,totalTeams:teams.length,teams};
+}
+function renderPowerRankings(){
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  if(players.every(p=>playerTeams(p).length===0)){
+    document.getElementById('power-rankings-content').innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Complete the draft first to see power rankings.</div>';
+    return;
+  }
+  const ranked=players.map(p=>({name:p,...calcPowerScore(p)})).sort((a,b)=>b.powerScore-a.powerScore);
+  const maxPower=ranked[0]?.powerScore||1;
+  const maxCeiling=Math.max(...ranked.map(r=>r.ceiling));
+  const getTier=(i,total)=>{
+    if(i<Math.ceil(total*0.3))return{label:'🔥 Hot',color:'#FF6B35',bg:'rgba(255,107,53,0.12)',border:'rgba(255,107,53,0.35)'};
+    if(i>=total-Math.ceil(total*0.3))return{label:'❄️ Cold',color:'#64B5F6',bg:'rgba(100,181,246,0.12)',border:'rgba(100,181,246,0.35)'};
+    return{label:'✅ Solid',color:'#5a9e6a',bg:'rgba(90,158,106,0.12)',border:'rgba(90,158,106,0.35)'};
+  };
+  let html='';
+  html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.04em;margin-bottom:14px">📊 POWER SCORE CHART</div>`;
+  ranked.forEach((r,i)=>{
+    const tier=getTier(i,ranked.length);
+    const barPct=Math.round((r.powerScore/maxPower)*100);
+    const ceilPct=Math.round((r.ceiling/maxCeiling)*100);
+    html+=`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--muted);min-width:22px">${i+1}</span>
+          <span style="font-weight:700;font-size:14px">${r.name}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${tier.bg};border:1px solid ${tier.border};color:${tier.color};font-weight:600">${tier.label}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${tier.color}">${r.powerScore}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:3px">PWR</span>
+        </div>
+      </div>
+      <div style="position:relative;height:22px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${ceilPct}%;background:rgba(212,168,67,0.15);border-radius:4px"></div>
+        <div style="position:absolute;left:0;top:0;height:100%;width:${barPct}%;background:linear-gradient(90deg,${tier.color}cc,${tier.color});border-radius:4px"></div>
+        <div style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(255,255,255,0.5)">ceil: ${r.ceiling}</div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  html+=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.04em;margin-bottom:12px">🃏 DETAILED BREAKDOWN</div><div style="display:flex;flex-direction:column;gap:12px">`;
+  ranked.forEach((r,i)=>{
+    const tier=getTier(i,ranked.length);
+    const prize=[S.config.buyin*S.config.players*0.65,S.config.buyin*S.config.players*0.25,S.config.buyin*S.config.players*0.10];
+    const prizeStr=i<3?`<span style="color:#5a9e6a;font-weight:600;font-size:12px">$${Math.round(prize[i])} if holds</span>`:'';
+    const teamChips=r.teams.map(t=>{
+      const pts=calcTeamPts(t.name);
+      const alive=isTeamAlive(t.name);
+      const isDH=t.rank>(S.config.dh||20);
+      const ts=S.teamStats[t.name]||{};
+      const stageMap={W:'🏆',RU:'🥈',SF:'🥉',QF:'⚽',R16:'R16',R32:'R32',GS:'❌',GX:'❌','':'?'};
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:${alive?'rgba(255,255,255,0.07)':'rgba(255,75,43,0.08)'};border:1px solid ${alive?(isDH?'rgba(212,168,67,0.4)':'rgba(255,255,255,0.12)'):'rgba(255,75,43,0.3)'};font-size:11px;opacity:${alive?1:0.6}">${t.flag} ${t.name}${isDH?' 🌶️':''} <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold)">${pts}</span> ${stageMap[ts.final||'']||'?'}</span>`;
+    }).join('');
+    const floorPct=maxCeiling>0?Math.round((r.floor/maxCeiling)*100):0;
+    co
+// ═══════════════════════════════════════════════════════════════════
 // TABS & UTILS
 // ═══════════════════════════════════════════════════════════════════
 function showTab(name,btn){
@@ -1085,6 +1200,7 @@ function showTab(name,btn){
   if(name==='standings')renderStandings();
   if(name==='draft')renderDraft();
   if(name==='admin')renderAdmin();
+  if(name==='power')renderPowerRankings();
 }
 function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();}
 function toast(msg){
