@@ -824,7 +824,8 @@ function renderMySchedule(){
         <div class="match-header"><span class="match-stage">${dot} ${timeStr} CT · Grp ${m.group}</span><span class="match-group" style="font-size:11px;color:var(--muted)">${m.venue}</span></div>
         <div class="match-row">
           <div class="match-team home" style="color:${homeIsmine?'var(--gold)':'var(--white)'};font-weight:${homeIsmine?'700':'600'}">${ht?.flag||''} ${m.home}${homeIsmine?' ⭐':''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.home]||''}</div></div>
-          <input class="score-input ${hasH?'has-score':''}" type="number" min="0" max="20" value="${hg}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'hg',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''} ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}>
+          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''}  ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}> 
+          <div class="match-team" style="color:${awayIsmine?
           <div class="score-sep">:</div>
           <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="match-team" style="color:${awayIsmine?'var(--gold)':'var(--white)'};font-weight:${awayIsmine?'700':'600'}">${m.away}${awayIsmine?' ⭐':''} ${at?.flag||''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.away]||''}</div></div>
@@ -894,7 +895,8 @@ function renderScores(){
           <div class="match-team home">${ht?.flag||''} ${m.home}</div>
           <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''} ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}>
           <div class="score-sep">:</div>
-          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
+          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''}  ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}>
+          <div class="match-team">${m.away}
           <div class="match-team">${m.away} ${at?.flag||''}</div>
         </div>
         ${winner?`<div class="match-winner">${winner}</div>`:''}
