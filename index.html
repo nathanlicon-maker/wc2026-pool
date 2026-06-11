@@ -39,10 +39,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 .site-title span{color:var(--gold)}
 .header-meta{color:var(--muted);font-size:12px;padding-bottom:3px}
 .prize-pill{margin-left:auto;background:var(--gold);color:var(--pitch);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;padding:5px 14px;border-radius:20px;white-space:nowrap}
-.wc-stats{display:flex;flex-direction:column;gap:6px;justify-content:center;min-width:130px}
-.wc-stat{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.wc-stat strong{color:var(--white);font-weight:600}
-  
+
 /* TABS */
 .tab-bar{display:flex;gap:3px;padding:10px 22px 0;border-bottom:1px solid var(--line);background:var(--pitch2);overflow-x:auto;scrollbar-width:none}
 .tab-bar::-webkit-scrollbar{display:none}
@@ -203,14 +200,14 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 
 <!-- HEADER -->
 <header>
-<div class="header-top">
-    <div id="wc-stats-left" class="wc-stats"></div>
-    <div style="text-align:center">
+  <div class="header-top">
+    <div>
       <div class="site-title">⚽ WC 2026 <span>FANTASY POOL</span></div>
       <div class="header-meta">48 Teams · 12 Groups · Snake Draft · Live Leaderboard</div>
     </div>
-    <div id="wc-stats-right" class="wc-stats" style="align-items:flex-end"></div>
+    <div class="prize-pill" id="header-prize">💰 $400 Pool</div>
   </div>
+</header>
 
 <!-- TABS -->
 <div class="tab-bar">
@@ -715,72 +712,8 @@ function renderLeaderboard(){
     document.getElementById('lb-updated').textContent=`Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
   }
   updateTicker(lb);
-  renderHeaderStats(lb);
 }
 
-function renderHeaderStats(lb){
-  // ── LEFT: Tournament stats ───────────────────────────────────────
-  const totalGoals=Object.values(S.scores||{}).reduce((acc,sc)=>{
-    if(sc.hg!==''&&sc.hg!=null)acc+=parseInt(sc.hg)||0;
-    if(sc.ag!==''&&sc.ag!=null)acc+=parseInt(sc.ag)||0;
-    return acc;
-  },0);
-  const gamesPlayed=Object.values(S.scores||{}).filter(sc=>sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null).length;
-  const totalGames=72; // group stage only
-  const today=new Date();
-  const tournamentStart=new Date('2026-06-11');
-  const dayNum=Math.max(1,Math.floor((today-tournamentStart)/(1000*60*60*24))+1);
-  const todayGames=MATCHES.filter(m=>{
-    const d=new Date(m.dt+':00-05:00');
-    return d.toDateString()===today.toDateString();
-  }).length;
-
-  document.getElementById('wc-stats-left').innerHTML=`
-    <div class="wc-stat">📅 <span>Match Day <strong>${dayNum}</strong></span></div>
-    <div class="wc-stat">⚽ <span><strong>${totalGoals}</strong> goals scored</span></div>
-    <div class="wc-stat">🏟️ <span><strong>${gamesPlayed}</strong>/${totalGames} games played</span></div>
-    <div class="wc-stat">📺 <span><strong>${todayGames}</strong> games today</span></div>
-  `;
-
-  // ── RIGHT: Pool race ─────────────────────────────────────────────
-  const gap=lb.length>=2?lb[0].pts-lb[1].pts:0;
-  const leader=lb[0]?.name||'—';
-  const second=lb[1]?.name||'—';
-
-  // Most goals from a single team today
-  const todayMatchIds=new Set(MATCHES.filter(m=>{
-    const d=new Date(m.dt+':00-05:00');
-    return d.toDateString()===new Date().toDateString();
-  }).map(m=>m.id));
-
-  // Find player who gained most pts today (teams with scores entered today)
-  let hotPlayer='—';
-  let hotPts=0;
-  const numP=S.config.players||10;
-  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
-  players.forEach(p=>{
-    const teams=playerTeams(p);
-    let todayPts=0;
-    teams.forEach(t=>{
-      MATCHES.filter(m=>todayMatchIds.has(m.id)&&(m.home===t.name||m.away===t.name)).forEach(m=>{
-        const sc=S.scores[m.id]||{};
-        if(sc.hg===''||sc.hg==null)return;
-        const hg=parseInt(sc.hg)||0,ag=parseInt(sc.ag)||0;
-        if(m.home===t.name){todayPts+=hg>ag?5:hg===ag?2:-1;todayPts+=hg;}
-        if(m.away===t.name){todayPts+=ag>hg?5:ag===hg?2:-1;todayPts+=ag;}
-      });
-    });
-    if(todayPts>hotPts){hotPts=todayPts;hotPlayer=p;}
-  });
-
-  document.getElementById('wc-stats-right').innerHTML=`
-    <div class="wc-stat">🏆 <span>Leader: <strong>${leader}</strong></span></div>
-    <div class="wc-stat">📈 <span>Gap: <strong>${gap} pts</strong> over ${second}</span></div>
-    <div class="wc-stat">🔥 <span>Hot today: <strong>${hotPlayer}</strong>${hotPts>0?' (+'+hotPts+'pts)':''}</span></div>
-    <div class="wc-stat">💰 <span>Pool: <strong>$${(S.config.buyin||100)*(S.config.players||10)}</strong></span></div>
-  `;
-}
-  
 function updateTicker(lb){
   const items=lb.map((p,i)=>`${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.'} ${p.name}: ${p.pts} pts`).join('  ·  ');;
   const sep='  ·  ⚽ WC 2026  ·  ';
