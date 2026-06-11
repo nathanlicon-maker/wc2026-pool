@@ -249,10 +249,10 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 
 <!-- DRAFT -->
 <div id="pane-draft" class="pane">
-  <div class="section-title">Draft Board <small>assign teams to players</small></div>
+  <div class="section-title">Live Snake Draft <small id="draft-tab-sub">waiting to start</small></div>
 
-  <!-- LOCKED BANNER (hidden when unlocked) -->
-  <div id="draft-locked-banner" style="display:none;background:rgba(255,75,43,0.1);border:1px solid rgba(255,75,43,0.35);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+  <!-- LOCKED BANNER -->
+  <div id="draft-locked-banner" style="display:none;background:rgba(255,75,43,0.1);border:1px solid rgba(255,75,43,0.35);border-radius:8px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px">
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">🔒</span>
       <div>
@@ -263,12 +263,61 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     <button class="btn btn-ghost" style="font-size:13px;white-space:nowrap" onclick="promptUnlock()">🔓 Unlock Draft</button>
   </div>
 
-  <div id="draft-controls" class="btn-row" style="margin-bottom:14px">
-    <button class="btn btn-gold" onclick="saveDraft()">💾 Save Draft</button>
-    <button class="btn btn-ghost" onclick="autoDraft()">🎲 Random Draft</button>
-    <button class="btn" style="background:#1a3d28;color:var(--coral);border:1px solid rgba(255,75,43,0.4);margin-left:auto" onclick="lockDraft()">🔒 Lock Draft</button>
+  <!-- COMMISSIONER CONTROLS (pre-draft) -->
+  <div id="draft-commissioner-controls" class="btn-row" style="margin-bottom:16px">
+    <button class="btn btn-gold" onclick="startLiveDraft()">🚀 Start Live Draft</button>
+    <button class="btn btn-ghost" onclick="autoDraft()">🎲 Auto-Assign All</button>
+    <button class="btn" style="background:#1a3d28;color:var(--coral);border:1px solid rgba(255,75,43,0.4)" onclick="lockDraft()">🔒 Lock Draft</button>
     <span id="draft-info" style="color:var(--muted);font-size:12px;align-self:center"></span>
   </div>
+
+  <!-- LIVE DRAFT PANEL (shown during active draft) -->
+  <div id="live-draft-panel" style="display:none">
+
+    <!-- ON THE CLOCK card -->
+    <div id="on-the-clock" style="background:linear-gradient(135deg,#1a3d28,#0e2a1a);border:2px solid var(--gold);border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">On The Clock</div>
+        <div id="clock-player" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--gold);line-height:1.1;margin-top:4px">—</div>
+        <div id="clock-info" style="font-size:12px;color:var(--muted);margin-top:3px"></div>
+      </div>
+      <div style="text-align:right">
+        <div id="pick-timer" style="font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;color:var(--white);line-height:1">—</div>
+        <div style="font-size:10px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">seconds</div>
+      </div>
+    </div>
+
+    <!-- Draft order strip -->
+    <div id="draft-order-strip" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--line)">
+    </div>
+
+    <!-- WHO ARE YOU selector -->
+    <div id="who-are-you-bar" style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap">I am:</span>
+      <div id="who-are-you-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+
+    <!-- Pick submission (shown only on your turn) -->
+    <div id="your-turn-panel" style="display:none;background:rgba(212,168,67,0.08);border:2px solid var(--gold);border-radius:10px;padding:16px;margin-bottom:14px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--gold);margin-bottom:10px">🎯 It's your turn! Pick a team:</div>
+      <select id="pick-select" style="width:100%;background:var(--card2);border:1px solid var(--gold);border-radius:7px;color:var(--white);font-size:15px;padding:10px 12px;outline:none;margin-bottom:10px">
+        <option value="">— Select a team —</option>
+      </select>
+      <button class="btn btn-gold" style="width:100%;font-size:16px;padding:12px" onclick="submitPick()">✅ Submit Pick</button>
+    </div>
+    <div id="waiting-panel" style="display:none;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;color:var(--muted);font-size:13px">
+      ⏳ Waiting for <span id="waiting-for" style="color:var(--white);font-weight:600"></span> to pick...
+    </div>
+
+    <!-- Recent picks log -->
+    <div style="margin-bottom:14px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--muted);letter-spacing:0.04em;margin-bottom:8px">PICK LOG</div>
+      <div id="pick-log" style="display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
+    </div>
+
+  </div>
+
+  <!-- DRAFT RESULTS (always shown) -->
   <div id="draft-board"></div>
 </div>
 
@@ -353,6 +402,16 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   </div>
   <div class="section-title">Player Names</div>
   <div class="admin-grid" id="player-names-grid"></div>
+
+  <div class="section-title" style="margin-top:20px">Draft Order <small>drag to reorder, or randomize</small></div>
+  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:11px 15px;margin-bottom:12px;font-size:12px;color:var(--muted)">
+    Pick 1 goes first, then snake reverses each round. Set this before starting the live draft.
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-gold" onclick="randomizeDraftOrder()">🎲 Randomize Order</button>
+    <button class="btn btn-ghost" onclick="saveDraftOrder()">💾 Save Order</button>
+  </div>
+  <div id="draft-order-list" style="display:flex;flex-direction:column;gap:6px;max-width:400px"></div>
   <div class="btn-row" style="margin-bottom:24px">
     <button class="btn btn-gold" onclick="saveConfig()">💾 Save Settings</button>
     <button class="btn btn-coral" onclick="resetAll()">🗑️ Reset All Data</button>
@@ -454,10 +513,12 @@ function teamsPerPlayer(numPlayers){ return Math.floor(48/numPlayers); }
 function unownedCount(numPlayers){ return 48 - (teamsPerPlayer(numPlayers)*numPlayers); }
 
 let S={
-  config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
-  playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
+  config:{name:"WC 2026 Fantasy Pool",buyin:100,players:10,dh:20},
+  playerNames:["Player 1","Player 2","Player 3","Player 4","Player 5","Player 6","Player 7","Player 8","Player 9","Player 10","","","","","",""],
   draft:{},scores:{},teamStats:{},lastUpdated:null,
-  draftLocked:false
+  draftLocked:false,
+  draftOrder:[],   // player names in snake pick order (slot 1 picks first)
+  liveDraft:{active:false,currentPick:0,picks:[]}
 };
 let JSONBIN_KEY='$2a$10$2aGlgg1W28gK/lxQs0b16OtUkNJZd7vykGcJPgIyfJU2NIAS6Lu4u';
 let JSONBIN_ID='6a2a0b4eda38895dfeaa6c49';
@@ -465,6 +526,9 @@ let JSONBIN_URL='https://api.jsonbin.io/v3/b/'+JSONBIN_ID;
 let syncTimer=null;
 let activeGroupFilter='ALL';
 let isSyncing=false;
+let myPlayerName='';       // which player this browser tab "is"
+let pickTimerInterval=null;
+let pickSecondsLeft=90;
 
 // ═══════════════════════════════════════════════════════════════════
 // JSONBIN SYNC — full CORS support, works on all mobile browsers
@@ -539,10 +603,15 @@ function updateLastSync(){
   el.textContent=`Last sync: ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
 }
 
-// Auto-sync every 60 seconds
+// Auto-sync: 5s during live draft, 60s otherwise
 function startAutoSync(){
   if(syncTimer)clearInterval(syncTimer);
-  syncTimer=setInterval(syncRead,60000);
+  const fast=(S.liveDraft&&S.liveDraft.active);
+  syncTimer=setInterval(()=>{
+    syncRead();
+    const nowFast=(S.liveDraft&&S.liveDraft.active);
+    if(nowFast!==fast)startAutoSync(); // restart with new interval
+  }, fast?5000:60000);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -724,89 +793,279 @@ function renderStandings(){
 // ═══════════════════════════════════════════════════════════════════
 const UNLOCK_PIN = '2026';  // Change this to your own PIN
 
+// ═══════════════════════════════════════════════════════════════════
+// DRAFT LOCK
+// ═══════════════════════════════════════════════════════════════════
+const UNLOCK_PIN='2026';
+
 function lockDraft(){
   if(S.draftLocked){toast('Already locked.');return;}
-  if(!confirm('Lock the draft? Players will no longer be able to reassign teams.\n\nUnlock PIN: ' + UNLOCK_PIN + '\n\nSave this PIN somewhere safe!'))return;
+  if(!confirm('Lock the draft? Unlock PIN: '+UNLOCK_PIN+'\nSave this!'))return;
   S.draftLocked=true;
+  if(S.liveDraft)S.liveDraft.active=false;
+  stopPickTimer();
   saveLocal();syncWrite();
-  applyDraftLockUI();
-  renderDraft();
-  toast('🔒 Draft locked! PIN to unlock: ' + UNLOCK_PIN);
+  applyDraftLockUI();renderDraft();
+  toast('🔒 Draft locked! PIN: '+UNLOCK_PIN);
 }
-
 function promptUnlock(){
-  const pin=prompt('Enter the commissioner PIN to unlock the draft:');
-  if(pin===null)return; // cancelled
+  const pin=prompt('Enter commissioner PIN to unlock:');
+  if(pin===null)return;
   if(pin===UNLOCK_PIN){
     S.draftLocked=false;
     saveLocal();syncWrite();
-    applyDraftLockUI();
-    renderDraft();
+    applyDraftLockUI();renderDraft();
     toast('🔓 Draft unlocked.');
-  } else {
-    toast('❌ Wrong PIN.');
-  }
+  }else toast('❌ Wrong PIN.');
 }
-
 function toggleLockFromAdmin(){
-  if(S.draftLocked) promptUnlock();
-  else lockDraft();
+  if(S.draftLocked)promptUnlock();else lockDraft();
 }
-
 function applyDraftLockUI(){
   const locked=S.draftLocked;
-  // Draft tab banner
   const banner=document.getElementById('draft-locked-banner');
-  const controls=document.getElementById('draft-controls');
-  if(banner) banner.style.display=locked?'flex':'none';
-  if(controls) controls.style.display=locked?'none':'flex';
-
-  // Admin lock card
+  const controls=document.getElementById('draft-commissioner-controls');
+  if(banner)banner.style.display=locked?'flex':'none';
+  if(controls)controls.style.display=locked?'none':'flex';
   const card=document.getElementById('admin-lock-card');
   const icon=document.getElementById('admin-lock-icon');
   const title=document.getElementById('admin-lock-title');
   const sub=document.getElementById('admin-lock-subtitle');
   const btn=document.getElementById('admin-lock-btn');
-  if(card){
-    card.style.background=locked?'rgba(255,75,43,0.08)':'rgba(90,158,106,0.08)';
-    card.style.border=locked?'1px solid rgba(255,75,43,0.3)':'1px solid rgba(90,158,106,0.3)';
+  if(card){card.style.background=locked?'rgba(255,75,43,0.08)':'rgba(90,158,106,0.08)';card.style.border=locked?'1px solid rgba(255,75,43,0.3)':'1px solid rgba(90,158,106,0.3)';}
+  if(icon)icon.textContent=locked?'🔒':'🔓';
+  if(title){title.textContent=locked?'Draft Locked':'Draft Open';title.style.color=locked?'var(--coral)':'#5a9e6a';}
+  if(sub)sub.textContent=locked?'Teams are frozen. Enter PIN to make changes.':'Teams can be assigned on the Draft Board.';
+  if(btn){btn.textContent=locked?'🔓 Unlock Draft':'🔒 Lock Draft';btn.style.background=locked?'var(--card2)':'rgba(255,75,43,0.1)';btn.style.color=locked?'var(--white)':'var(--coral)';btn.style.border=locked?'1px solid var(--line)':'1px solid rgba(255,75,43,0.4)';}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LIVE SNAKE DRAFT ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+// Build the full snake draft order array — uses draftOrder if set, else playerNames
+function buildSnakeOrder(){
+  const numP=S.config.players||10;
+  const allPlayers=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  // Use saved draftOrder if it matches current players, otherwise fall back
+  let ordered=allPlayers;
+  if(S.draftOrder&&S.draftOrder.length){
+    // Keep only names that are still in the player list, add any missing ones at end
+    const valid=S.draftOrder.filter(p=>allPlayers.includes(p));
+    const missing=allPlayers.filter(p=>!valid.includes(p));
+    ordered=[...valid,...missing];
   }
-  if(icon) icon.textContent=locked?'🔒':'🔓';
-  if(title){ title.textContent=locked?'Draft Locked':'Draft Open'; title.style.color=locked?'var(--coral)':'#5a9e6a'; }
-  if(sub) sub.textContent=locked?'Teams are frozen. Enter PIN to make changes.':'Teams can still be reassigned on the Draft Board.';
-  if(btn){
-    btn.textContent=locked?'🔓 Unlock Draft':'🔒 Lock Draft';
-    btn.style.background=locked?'var(--card2)':'rgba(255,75,43,0.1)';
-    btn.style.color=locked?'var(--white)':'var(--coral)';
-    btn.style.border=locked?'1px solid var(--line)':'1px solid rgba(255,75,43,0.4)';
+  const tpp=teamsPerPlayer(numP);
+  const order=[];
+  for(let round=0;round<tpp;round++){
+    const roundOrder=round%2===0?[...ordered]:[...ordered].reverse();
+    roundOrder.forEach(p=>order.push(p));
+  }
+  return order;
+}
+
+function getPickedTeams(){
+  const ld=S.liveDraft||{};
+  return new Set((ld.picks||[]).map(p=>p.team));
+}
+
+function getCurrentPicker(){
+  const order=buildSnakeOrder();
+  const idx=(S.liveDraft||{}).currentPick||0;
+  return order[idx]||null;
+}
+
+function startLiveDraft(){
+  if(!confirm('Start the live snake draft? All players should be on the site before you begin.'))return;
+  if(!S.liveDraft)S.liveDraft={};
+  S.liveDraft.active=true;
+  S.liveDraft.currentPick=0;
+  S.liveDraft.picks=[];
+  S.draft={};
+  saveLocal();syncWrite();
+  renderDraft();
+  toast('🚀 Draft started! Pick '+getCurrentPicker()+' is on the clock.');
+}
+
+function submitPick(){
+  const sel=document.getElementById('pick-select');
+  const team=sel?.value;
+  if(!team){toast('Select a team first!');return;}
+  const currentPicker=getCurrentPicker();
+  if(!currentPicker){toast('Draft is complete!');return;}
+  // Add pick
+  if(!S.liveDraft)S.liveDraft={active:true,currentPick:0,picks:[]};
+  S.liveDraft.picks.push({player:currentPicker,team,pickNum:(S.liveDraft.currentPick||0)+1});
+  S.draft[team]=currentPicker;
+  S.liveDraft.currentPick=(S.liveDraft.currentPick||0)+1;
+  // Check if draft complete
+  const totalPicks=buildSnakeOrder().length;
+  if(S.liveDraft.currentPick>=totalPicks){
+    S.liveDraft.active=false;
+    S.draftLocked=true;
+    toast('🏆 Draft complete! All teams assigned.');
+  }
+  stopPickTimer();
+  saveLocal();syncWrite();
+  renderDraft();
+  renderLeaderboard();
+}
+
+function stopPickTimer(){
+  if(pickTimerInterval){clearInterval(pickTimerInterval);pickTimerInterval=null;}
+}
+
+function startPickTimer(){
+  stopPickTimer();
+  pickSecondsLeft=90;
+  updateTimerDisplay();
+  pickTimerInterval=setInterval(()=>{
+    pickSecondsLeft--;
+    updateTimerDisplay();
+    if(pickSecondsLeft<=0){
+      stopPickTimer();
+      toast('⏰ Time\'s up! Commissioner can advance the pick.');
+    }
+  },1000);
+}
+
+function updateTimerDisplay(){
+  const el=document.getElementById('pick-timer');
+  if(el){
+    el.textContent=pickSecondsLeft;
+    el.style.color=pickSecondsLeft<=10?'var(--coral)':pickSecondsLeft<=30?'var(--gold)':'var(--white)';
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER DRAFT
+// ═══════════════════════════════════════════════════════════════════
 function renderDraft(){
   const locked=S.draftLocked;
-  const numP=S.config.players||8;
+  const ld=S.liveDraft||{active:false,currentPick:0,picks:[]};
+  const numP=S.config.players||10;
   const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
   const tpp=teamsPerPlayer(numP);
   const unowned=unownedCount(numP);
-  const infoEl=document.getElementById('draft-info');
-  if(infoEl){
-    infoEl.innerHTML=`${tpp} teams per player · ${numP} players · 48 teams total`
-      +(unowned>0?` · <span style="color:var(--coral)">${unowned} unowned</span>`:'');
+  const snakeOrder=buildSnakeOrder();
+  const totalPicks=snakeOrder.length;
+  const pickedTeams=getPickedTeams();
+  const currentPicker=getCurrentPicker();
+  const isDraftComplete=ld.currentPick>=totalPicks;
+
+  // Update tab subtitle
+  const sub=document.getElementById('draft-tab-sub');
+  if(sub){
+    if(locked&&isDraftComplete)sub.textContent='complete & locked';
+    else if(ld.active)sub.textContent=`pick ${(ld.currentPick||0)+1}/${totalPicks} — ${currentPicker} on the clock`;
+    else if(locked)sub.textContent='locked';
+    else sub.textContent='not started';
   }
+
+  // Update info text
+  const infoEl=document.getElementById('draft-info');
+  if(infoEl)infoEl.innerHTML=`${tpp} teams per player · ${numP} players · 48 total${unowned>0?` · <span style="color:var(--coral)">${unowned} unowned</span>`:''}`;
+
   applyDraftLockUI();
+
+  // Show/hide live draft panel
+  const livePanel=document.getElementById('live-draft-panel');
+  const commControls=document.getElementById('draft-commissioner-controls');
+  if(livePanel){
+    if(ld.active||isDraftComplete){
+      livePanel.style.display='block';
+      if(commControls)commControls.style.display='none';
+    }else{
+      livePanel.style.display='none';
+      if(commControls&&!locked)commControls.style.display='flex';
+    }
+  }
+
+  if(ld.active||isDraftComplete){
+    // Update ON THE CLOCK card
+    document.getElementById('clock-player').textContent=isDraftComplete?'Draft Complete 🏆':(currentPicker||'—');
+    document.getElementById('clock-info').textContent=isDraftComplete
+      ?'All teams have been drafted'
+      :`Pick ${(ld.currentPick||0)+1} of ${totalPicks} · Round ${Math.floor((ld.currentPick||0)/numP)+1}`;
+
+    if(ld.active&&!isDraftComplete)startPickTimer();
+    else{stopPickTimer();const el=document.getElementById('pick-timer');if(el)el.textContent='✓';}
+
+    // Draft order strip
+    const strip=document.getElementById('draft-order-strip');
+    if(strip){
+      strip.innerHTML=`<span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:2px">SNAKE ORDER</span>`+
+        players.map((p,i)=>{
+          const count=(ld.picks||[]).filter(pk=>pk.player===p).length;
+          const isNow=p===currentPicker&&!isDraftComplete;
+          return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${isNow?'var(--gold)':'var(--line)'};background:${isNow?'rgba(212,168,67,0.15)':'transparent'};color:${isNow?'var(--gold)':'var(--muted)'};font-weight:${isNow?'700':'400'}">${p} <span style="color:var(--gold)">${count}/${tpp}</span></span>`;
+        }).join('');
+    }
+
+    // Who are you buttons
+    const whoBar=document.getElementById('who-are-you-btns');
+    if(whoBar){
+      whoBar.innerHTML=players.map(p=>
+        `<button onclick="setMyPlayer('${p}')" style="padding:5px 12px;border-radius:20px;border:2px solid ${myPlayerName===p?'var(--gold)':'var(--line)'};background:${myPlayerName===p?'rgba(212,168,67,0.15)':'transparent'};color:${myPlayerName===p?'var(--gold)':'var(--muted)'};font-size:12px;font-weight:600;cursor:pointer">${p}</button>`
+      ).join('');
+    }
+
+    // Your turn / waiting panel
+    const yourTurn=document.getElementById('your-turn-panel');
+    const waiting=document.getElementById('waiting-panel');
+    const waitingFor=document.getElementById('waiting-for');
+    if(ld.active&&!isDraftComplete&&myPlayerName&&myPlayerName===currentPicker){
+      if(yourTurn)yourTurn.style.display='block';
+      if(waiting)waiting.style.display='none';
+      // Populate pick select with available teams
+      const sel=document.getElementById('pick-select');
+      if(sel){
+        const available=[...TEAMS].filter(t=>!pickedTeams.has(t.name)).sort((a,b)=>a.rank-b.rank);
+        sel.innerHTML='<option value="">— Select a team —</option>'+
+          available.map(t=>{
+            const isDH=t.rank>(S.config.dh||20);
+            return `<option value="${t.name}">${t.flag} ${t.name} (#${t.rank}${isDH?' 🌶️ ×1.5':''})</option>`;
+          }).join('');
+      }
+    }else{
+      if(yourTurn)yourTurn.style.display='none';
+      if(ld.active&&!isDraftComplete){
+        if(waiting)waiting.style.display='block';
+        if(waitingFor)waitingFor.textContent=currentPicker||'';
+      }else{
+        if(waiting)waiting.style.display='none';
+      }
+    }
+
+    // Pick log
+    const log=document.getElementById('pick-log');
+    if(log){
+      const picks=[...(ld.picks||[])].reverse().slice(0,20);
+      log.innerHTML=picks.length?picks.map(pk=>{
+        const t=TEAMS.find(x=>x.name===pk.team);
+        const isDH=t&&t.rank>(S.config.dh||20);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px;border:1px solid var(--line)">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--muted);min-width:28px">#${pk.pickNum}</span>
+          <span style="font-size:16px">${t?.flag||''}</span>
+          <span style="font-weight:600;font-size:13px;flex:1">${pk.team}${isDH?' <span style="color:var(--gold);font-size:11px">×1.5</span>':''}</span>
+          <span style="font-size:12px;color:var(--muted)">${pk.player}</span>
+        </div>`;
+      }).join(''):'<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px">No picks yet</div>';
+    }
+  }
+
+  // Draft results board (always shown at bottom)
   const tierL=r=>r<=4?'S':r<=8?'A':r<=16?'B':r<=24?'C':r<=40?'D':'E';
   const tierC=r=>r<=4?'#c9a00a':r<=8?'#2a6a3a':r<=16?'#1a4a6a':r<=24?'#4a3a0a':r<=40?'#3a2a0a':'#3a0a0a';
   let html='';
+
+  // Allocation bar
   const assignCounts={};
   players.forEach(p=>assignCounts[p]=0);
   TEAMS.forEach(t=>{if(S.draft[t.name]&&assignCounts[S.draft[t.name]]!==undefined)assignCounts[S.draft[t.name]]++;});
-
   html+=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--line)">
-    <span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px">${locked?'🔒 LOCKED DRAFT':'DRAFT ALLOCATION'} (target: ${tpp} per player)</span>
-    ${players.map(p=>{
-      const c=assignCounts[p]||0;
-      const col=c===tpp?'#5a9e6a':c>tpp?'var(--coral)':'var(--muted)';
-      return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${col}40;background:${col}15;color:${col};font-weight:600">${p}: ${c}/${tpp}</span>`;
-    }).join('')}
+    <span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px">DRAFT BOARD (${(ld.picks||[]).length}/${totalPicks} picks made)</span>
+    ${players.map(p=>{const c=assignCounts[p]||0;const col=c===tpp?'#5a9e6a':c>tpp?'var(--coral)':'var(--muted)';return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${col}40;background:${col}15;color:${col};font-weight:600">${p}: ${c}/${tpp}</span>`;}).join('')}
     ${unowned>0?`<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid var(--coral)40;background:var(--coral)10;color:var(--coral);font-weight:600;margin-left:auto">⚠️ ${unowned} unowned</span>`:''}
   </div>`;
 
@@ -815,63 +1074,150 @@ function renderDraft(){
     TEAMS.filter(t=>t.group===g).forEach(t=>{
       const isDH=t.rank>(S.config.dh||20);
       const owner=S.draft[t.name]||'';
-      const isUnowned=!owner;
-      if(locked){
-        html+=`<div class="draft-card ${isDH?'dh':''}" style="${isUnowned?'opacity:0.45':''}">
-          <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
-          <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-            <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
-            ${isDH?'<span class="dh-badge">🌶️ ×1.5</span>':''}
-          </div>
-          <div style="padding:6px 8px;border-radius:5px;background:var(--card2);font-size:12px;font-weight:600;color:${owner?'var(--white)':'var(--muted)'};border:1px solid var(--line)">
-            ${owner?`👤 ${owner}`:'<span style="opacity:0.5">— Unowned —</span>'}
-          </div>
-        </div>`;
-      } else {
-        const opts=`<option value="">— Unowned —</option>`+players.map(p=>`<option value="${p}"${owner===p?' selected':''}>${p}</option>`).join('');
-        html+=`<div class="draft-card ${isDH?'dh':''}" style="${isUnowned?'opacity:0.6':''}">
-          <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
-          <div style="display:flex;gap:5px;align-items:center">
-            <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
-            ${isDH?'<span class="dh-badge">🌶️ ×1.5</span>':''}
-            ${isUnowned?'<span style="font-size:10px;color:var(--muted)">unowned</span>':''}
-          </div>
-          <select class="draft-select" data-team="${t.name}">${opts}</select>
-        </div>`;
-      }
+      const isPicked=pickedTeams.has(t.name);
+      const isAvail=ld.active&&!isPicked;
+      html+=`<div class="draft-card ${isDH?'dh':''}" style="${(!owner&&!isAvail)?'opacity:0.45':''}${isPicked?'':''}">
+        <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+          <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
+          ${isDH?'<span class="dh-badge">🌶️ ×1.5</span>':''}
+        </div>
+        <div style="padding:6px 8px;border-radius:5px;background:var(--card2);font-size:12px;font-weight:600;color:${owner?'var(--white)':'var(--muted)'};border:1px solid ${owner?'rgba(212,168,67,0.3)':'var(--line)'}">
+          ${owner?`👤 ${owner}`:`<span style="opacity:0.4">${isAvail?'available':'—'}</span>`}
+        </div>
+      </div>`;
     });
     html+='</div>';
   });
   document.getElementById('draft-board').innerHTML=html;
 }
+
+function setMyPlayer(name){
+  myPlayerName=name;
+  try{localStorage.setItem('wc2026_myPlayer',name);}catch(e){}
+  renderDraft();
+  toast(`You are ${name}`);
+}
+
 function saveDraft(){
-  if(S.draftLocked){toast('🔒 Draft is locked — unlock it first.');return;}
-  document.querySelectorAll('.draft-select').forEach(s=>{
-    if(s.value)S.draft[s.dataset.team]=s.value;else delete S.draft[s.dataset.team];
-  });
-  saveLocal();
-  syncWrite();
+  if(S.draftLocked){toast('🔒 Draft is locked.');return;}
+  saveLocal();syncWrite();
   renderLeaderboard();renderStandings();
   toast('Draft saved & synced ✓');
 }
+
 function autoDraft(){
-  if(S.draftLocked){toast('🔒 Draft is locked — unlock it first.');return;}
-  const numP=S.config.players||8;
-  const players=(S.playerNames||[]).slice(0,numP);
+  if(S.draftLocked){toast('🔒 Draft is locked — unlock first.');return;}
+  if(!confirm('Auto-assign all 48 teams randomly? This overwrites any existing picks.'))return;
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
   const tpp=teamsPerPlayer(numP);
   const shuffled=[...TEAMS].sort(()=>Math.random()-0.5);
   S.draft={};
+  const picks=[];
   for(let round=0;round<tpp;round++){
     const order=round%2===0?[...players]:[...players].reverse();
-    order.forEach((p,i)=>{const idx=round*players.length+(round%2===0?i:players.length-1-i);if(shuffled[idx])S.draft[shuffled[idx].name]=p;});
+    order.forEach((p,i)=>{
+      const idx=round*players.length+(round%2===0?i:players.length-1-i);
+      if(shuffled[idx]){S.draft[shuffled[idx].name]=p;picks.push({player:p,team:shuffled[idx].name,pickNum:picks.length+1});}
+    });
   }
+  if(!S.liveDraft)S.liveDraft={};
+  S.liveDraft.active=false;
+  S.liveDraft.currentPick=picks.length;
+  S.liveDraft.picks=picks;
+  S.draftLocked=true;
   saveLocal();syncWrite();
-  renderDraft();renderLeaderboard();toast('Random draft done ✓');
+  renderDraft();renderLeaderboard();
+  toast('✅ Auto-draft complete & locked');
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // RENDER ADMIN
 // ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// DRAFT ORDER
+// ═══════════════════════════════════════════════════════════════════
+function renderDraftOrderList(){
+  const numP=S.config.players||10;
+  const allPlayers=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  // Build current order — use saved if valid, else playerNames order
+  let ordered=allPlayers;
+  if(S.draftOrder&&S.draftOrder.length){
+    const valid=S.draftOrder.filter(p=>allPlayers.includes(p));
+    const missing=allPlayers.filter(p=>!valid.includes(p));
+    ordered=[...valid,...missing];
+  }
+  const el=document.getElementById('draft-order-list');
+  if(!el)return;
+  el.innerHTML=ordered.map((p,i)=>`
+    <div draggable="true"
+      ondragstart="dragStart(event,${i})" ondragover="dragOver(event)" ondrop="dragDrop(event,${i})"
+      ondragend="dragEnd()"
+      id="dorder-${i}"
+      style="display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--card);border:1px solid var(--line);border-radius:8px;cursor:grab;user-select:none">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--gold);min-width:24px">${i+1}</span>
+      <span style="font-weight:600;flex:1">${p}</span>
+      <span style="font-size:11px;color:var(--muted)">${i===0?'picks 1st & last in R1':''}${i===ordered.length-1?'snake anchor':''}</span>
+      <span style="color:var(--muted);font-size:18px;cursor:grab">⠿</span>
+    </div>`).join('');
+  // Show snake preview
+  const tpp=teamsPerPlayer(numP);
+  let preview=`<div style="margin-top:10px;padding:10px 12px;background:var(--card);border-radius:8px;border:1px solid var(--line);font-size:11px;color:var(--muted)">
+    <div style="font-weight:700;color:var(--white);margin-bottom:6px">SNAKE PREVIEW (${tpp} rounds)</div>`;
+  for(let r=0;r<Math.min(tpp,4);r++){
+    const rOrder=r%2===0?ordered:[...ordered].reverse();
+    preview+=`<div style="margin-bottom:3px"><span style="color:var(--gold);font-weight:600">R${r+1}:</span> ${rOrder.join(' → ')}</div>`;
+  }
+  if(tpp>4)preview+=`<div style="color:var(--muted)">...and ${tpp-4} more rounds</div>`;
+  preview+='</div>';
+  el.innerHTML+=preview;
+}
+
+let dragSrcIdx=null;
+function dragStart(e,idx){dragSrcIdx=idx;e.dataTransfer.effectAllowed='move';}
+function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+function dragEnd(){dragSrcIdx=null;}
+function dragDrop(e,idx){
+  e.preventDefault();
+  if(dragSrcIdx===null||dragSrcIdx===idx)return;
+  const numP=S.config.players||10;
+  const allPlayers=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  let ordered=allPlayers;
+  if(S.draftOrder&&S.draftOrder.length){
+    const valid=S.draftOrder.filter(p=>allPlayers.includes(p));
+    const missing=allPlayers.filter(p=>!valid.includes(p));
+    ordered=[...valid,...missing];
+  }
+  const moved=ordered.splice(dragSrcIdx,1)[0];
+  ordered.splice(idx,0,moved);
+  S.draftOrder=ordered;
+  renderDraftOrderList();
+}
+
+function randomizeDraftOrder(){
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  S.draftOrder=[...players].sort(()=>Math.random()-0.5);
+  renderDraftOrderList();
+  toast('🎲 Order randomized — click Save to lock it in');
+}
+
+function saveDraftOrder(){
+  // Read current visual order from DOM
+  const numP=S.config.players||10;
+  const allPlayers=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  let ordered=allPlayers;
+  if(S.draftOrder&&S.draftOrder.length){
+    const valid=S.draftOrder.filter(p=>allPlayers.includes(p));
+    const missing=allPlayers.filter(p=>!valid.includes(p));
+    ordered=[...valid,...missing];
+  }
+  S.draftOrder=ordered;
+  saveLocal();syncWrite();
+  toast('✅ Draft order saved');
+}
+
 function updatePlayerHint(){
   const n=parseInt(document.getElementById('cfg-players')?.value)||8;
   const tpp=teamsPerPlayer(n);
@@ -896,6 +1242,7 @@ function renderAdmin(){
     <input type="text" id="pname-${i}" value="${(S.playerNames||[])[i]||''}"></div>`).join('');
   updatePlayerHint();
   applyDraftLockUI();
+  renderDraftOrderList();
   // KO tracker
   document.getElementById('ko-tracker').innerHTML=TEAMS.map(t=>{
     const ts=S.teamStats[t.name]||{};
@@ -923,13 +1270,17 @@ function renderAdmin(){
 }
 function saveConfig(){
   S.config.name=document.getElementById('cfg-name').value;
-  S.config.buyin=parseInt(document.getElementById('cfg-buyin').value)||50;
-  S.config.players=parseInt(document.getElementById('cfg-players').value)||8;
+  S.config.buyin=parseInt(document.getElementById('cfg-buyin').value)||100;
+  S.config.players=parseInt(document.getElementById('cfg-players').value)||10;
   S.config.dh=parseInt(document.getElementById('cfg-dh').value)||20;
   // Save all 16 slots so names aren't lost when toggling player count
   S.playerNames=Array.from({length:16},(_,i)=>document.getElementById(`pname-${i}`)?.value||'');
+  // Clear draft order so it rebuilds with new names
+  S.draftOrder=[];
   saveLocal();syncWrite();
-  renderAll();toast('Settings saved ✓');
+  renderAll();
+  renderDraftOrderList();
+  toast('Settings saved ✓');
 }
 function saveKO(){
   TEAMS.forEach(t=>{
@@ -985,6 +1336,7 @@ function toast(msg){
 // INIT
 // ═══════════════════════════════════════════════════════════════════
 loadLocal();
+try{myPlayerName=localStorage.getItem('wc2026_myPlayer')||'';}catch(e){}
 setSyncStatus('syncing','Connecting...');
 syncRead().then(()=>startAutoSync());
 </script>
