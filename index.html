@@ -795,11 +795,11 @@ function renderMySchedule(){
       html+=`<div class="match-card" style="border-color:rgba(212,168,67,0.3);${status==='completed'?'opacity:0.75':''}">
         <div class="match-header"><span class="match-stage">${dot} ${timeStr} CT · Grp ${m.group}</span><span class="match-group" style="font-size:11px;color:var(--muted)">${m.venue}</span></div>
         <div class="match-row">
-          <div class="match-team home" style="color:${homeIsmine?'var(--gold)':'var(--white)'};font-weight:${homeIsmine?'700':'600'}">${ht?.flag||''} ${m.home}${homeIsmine?' ⭐':''}</div>
+          <div class="match-team home" style="color:${homeIsmine?'var(--gold)':'var(--white)'};font-weight:${homeIsmine?'700':'600'}">${ht?.flag||''} ${m.home}${homeIsmine?' ⭐':''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.home]||''}</div></div>
           <input class="score-input ${hasH?'has-score':''}" type="number" min="0" max="20" value="${hg}" placeholder="—" onchange="setScore(${m.id},'hg',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="score-sep">:</div>
           <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
-          <div class="match-team" style="color:${awayIsmine?'var(--gold)':'var(--white)'};font-weight:${awayIsmine?'700':'600'}">${m.away}${awayIsmine?' ⭐':''} ${at?.flag||''}</div>
+          <div class="match-team" style="color:${awayIsmine?'var(--gold)':'var(--white)'};font-weight:${awayIsmine?'700':'600'}">${m.away}${awayIsmine?' ⭐':''} ${at?.flag||''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.away]||''}</div></div>
         </div>
         ${winner?`<div class="match-winner">${winner}</div>`:''}
       </div>`;
