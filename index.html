@@ -87,6 +87,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 .gf-btn:hover{color:var(--white);border-color:rgba(255,255,255,0.2)}
 .gf-btn.active{background:var(--gold);color:var(--pitch);border-color:var(--gold)}
 .matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:9px}
+#my-matches-container{display:flex;flex-direction:column;gap:9px;}
 .match-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px 13px}
 .match-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
 .match-stage{font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
@@ -253,7 +254,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div id="my-schedule-section" style="margin-bottom:20px;display:none">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--gold);letter-spacing:0.05em;margin-bottom:10px">👤 MY SCHEDULE</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px" id="who-am-i-btns"></div>
-    <div id="my-matches-container" class="matches-grid"></div>
+    <div id="my-matches-container"></div>
   </div>
   <div id="matches-container" class="matches-grid"></div>
 </div>
