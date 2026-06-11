@@ -251,8 +251,8 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div id="pane-draft" class="pane">
   <div class="section-title">Draft Board <small>assign teams to players</small></div>
 
-  <!-- LOCKED BANNER -->
-  <div id="draft-locked-banner" style="display:none;background:rgba(255,75,43,0.1);border:1px solid rgba(255,75,43,0.35);border-radius:8px;padding:12px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px">
+  <!-- LOCKED BANNER (hidden when unlocked) -->
+  <div id="draft-locked-banner" style="display:none;background:rgba(255,75,43,0.1);border:1px solid rgba(255,75,43,0.35);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">🔒</span>
       <div>
@@ -454,8 +454,8 @@ function teamsPerPlayer(numPlayers){ return Math.floor(48/numPlayers); }
 function unownedCount(numPlayers){ return 48 - (teamsPerPlayer(numPlayers)*numPlayers); }
 
 let S={
-  config:{name:"WC 2026 Fantasy Pool",buyin:100,players:10,dh:20},
-  playerNames:["Player 1","Player 2","Player 3","Player 4","Player 5","Player 6","Player 7","Player 8","Player 9","Player 10","","","","","",""],
+  config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
+  playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
   draft:{},scores:{},teamStats:{},lastUpdated:null,
   draftLocked:false
 };
@@ -724,59 +724,74 @@ function renderStandings(){
 // ═══════════════════════════════════════════════════════════════════
 const UNLOCK_PIN = '2026';  // Change this to your own PIN
 
-// ═══════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════
-// DRAFT
-// ═══════════════════════════════════════════════════════════════════
-const UNLOCK_PIN='2026';
-
 function lockDraft(){
   if(S.draftLocked){toast('Already locked.');return;}
-  if(!confirm('Lock the draft? Unlock PIN: '+UNLOCK_PIN+'\nSave this!'))return;
+  if(!confirm('Lock the draft? Players will no longer be able to reassign teams.\n\nUnlock PIN: ' + UNLOCK_PIN + '\n\nSave this PIN somewhere safe!'))return;
   S.draftLocked=true;
   saveLocal();syncWrite();
-  applyDraftLockUI();renderDraft();
-  toast('🔒 Draft locked! PIN: '+UNLOCK_PIN);
+  applyDraftLockUI();
+  renderDraft();
+  toast('🔒 Draft locked! PIN to unlock: ' + UNLOCK_PIN);
 }
+
 function promptUnlock(){
-  const pin=prompt('Enter commissioner PIN to unlock:');
-  if(pin===null)return;
+  const pin=prompt('Enter the commissioner PIN to unlock the draft:');
+  if(pin===null)return; // cancelled
   if(pin===UNLOCK_PIN){
     S.draftLocked=false;
     saveLocal();syncWrite();
-    applyDraftLockUI();renderDraft();
+    applyDraftLockUI();
+    renderDraft();
     toast('🔓 Draft unlocked.');
-  }else toast('❌ Wrong PIN.');
+  } else {
+    toast('❌ Wrong PIN.');
+  }
 }
+
 function toggleLockFromAdmin(){
-  if(S.draftLocked)promptUnlock();else lockDraft();
+  if(S.draftLocked) promptUnlock();
+  else lockDraft();
 }
+
 function applyDraftLockUI(){
   const locked=S.draftLocked;
+  // Draft tab banner
   const banner=document.getElementById('draft-locked-banner');
   const controls=document.getElementById('draft-controls');
-  if(banner)banner.style.display=locked?'flex':'none';
-  if(controls)controls.style.display=locked?'none':'flex';
+  if(banner) banner.style.display=locked?'flex':'none';
+  if(controls) controls.style.display=locked?'none':'flex';
+
+  // Admin lock card
   const card=document.getElementById('admin-lock-card');
   const icon=document.getElementById('admin-lock-icon');
   const title=document.getElementById('admin-lock-title');
   const sub=document.getElementById('admin-lock-subtitle');
   const btn=document.getElementById('admin-lock-btn');
-  if(card){card.style.background=locked?'rgba(255,75,43,0.08)':'rgba(90,158,106,0.08)';card.style.border=locked?'1px solid rgba(255,75,43,0.3)':'1px solid rgba(90,158,106,0.3)';}
-  if(icon)icon.textContent=locked?'🔒':'🔓';
-  if(title){title.textContent=locked?'Draft Locked':'Draft Open';title.style.color=locked?'var(--coral)':'#5a9e6a';}
-  if(sub)sub.textContent=locked?'Teams are frozen. Enter PIN to make changes.':'Teams can be assigned on the Draft Board.';
-  if(btn){btn.textContent=locked?'🔓 Unlock Draft':'🔒 Lock Draft';btn.style.background=locked?'var(--card2)':'rgba(255,75,43,0.1)';btn.style.color=locked?'var(--white)':'var(--coral)';btn.style.border=locked?'1px solid var(--line)':'1px solid rgba(255,75,43,0.4)';}
+  if(card){
+    card.style.background=locked?'rgba(255,75,43,0.08)':'rgba(90,158,106,0.08)';
+    card.style.border=locked?'1px solid rgba(255,75,43,0.3)':'1px solid rgba(90,158,106,0.3)';
+  }
+  if(icon) icon.textContent=locked?'🔒':'🔓';
+  if(title){ title.textContent=locked?'Draft Locked':'Draft Open'; title.style.color=locked?'var(--coral)':'#5a9e6a'; }
+  if(sub) sub.textContent=locked?'Teams are frozen. Enter PIN to make changes.':'Teams can still be reassigned on the Draft Board.';
+  if(btn){
+    btn.textContent=locked?'🔓 Unlock Draft':'🔒 Lock Draft';
+    btn.style.background=locked?'var(--card2)':'rgba(255,75,43,0.1)';
+    btn.style.color=locked?'var(--white)':'var(--coral)';
+    btn.style.border=locked?'1px solid var(--line)':'1px solid rgba(255,75,43,0.4)';
+  }
 }
-
 function renderDraft(){
   const locked=S.draftLocked;
-  const numP=S.config.players||10;
+  const numP=S.config.players||8;
   const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
   const tpp=teamsPerPlayer(numP);
   const unowned=unownedCount(numP);
   const infoEl=document.getElementById('draft-info');
-  if(infoEl)infoEl.innerHTML=`${tpp} teams per player · ${numP} players · 48 teams total`+(unowned>0?` · <span style="color:var(--coral)">${unowned} unowned</span>`:'');
+  if(infoEl){
+    infoEl.innerHTML=`${tpp} teams per player · ${numP} players · 48 teams total`
+      +(unowned>0?` · <span style="color:var(--coral)">${unowned} unowned</span>`:'');
+  }
   applyDraftLockUI();
   const tierL=r=>r<=4?'S':r<=8?'A':r<=16?'B':r<=24?'C':r<=40?'D':'E';
   const tierC=r=>r<=4?'#c9a00a':r<=8?'#2a6a3a':r<=16?'#1a4a6a':r<=24?'#4a3a0a':r<=40?'#3a2a0a':'#3a0a0a';
@@ -784,18 +799,25 @@ function renderDraft(){
   const assignCounts={};
   players.forEach(p=>assignCounts[p]=0);
   TEAMS.forEach(t=>{if(S.draft[t.name]&&assignCounts[S.draft[t.name]]!==undefined)assignCounts[S.draft[t.name]]++;});
+
   html+=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;padding:12px;background:var(--card);border-radius:8px;border:1px solid var(--line)">
-    <span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px">${locked?'🔒 LOCKED':'DRAFT ALLOCATION'} (target: ${tpp} per player)</span>
-    ${players.map(p=>{const c=assignCounts[p]||0;const col=c===tpp?'#5a9e6a':c>tpp?'var(--coral)':'var(--muted)';return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${col}40;background:${col}15;color:${col};font-weight:600">${p}: ${c}/${tpp}</span>`;}).join('')}
+    <span style="font-size:11px;color:var(--muted);font-weight:600;width:100%;margin-bottom:4px">${locked?'🔒 LOCKED DRAFT':'DRAFT ALLOCATION'} (target: ${tpp} per player)</span>
+    ${players.map(p=>{
+      const c=assignCounts[p]||0;
+      const col=c===tpp?'#5a9e6a':c>tpp?'var(--coral)':'var(--muted)';
+      return `<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid ${col}40;background:${col}15;color:${col};font-weight:600">${p}: ${c}/${tpp}</span>`;
+    }).join('')}
     ${unowned>0?`<span style="font-size:12px;padding:3px 10px;border-radius:12px;border:1px solid var(--coral)40;background:var(--coral)10;color:var(--coral);font-weight:600;margin-left:auto">⚠️ ${unowned} unowned</span>`:''}
   </div>`;
+
   ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
     html+=`<div class="group-header-label">GROUP ${g}</div><div class="draft-grid">`;
     TEAMS.filter(t=>t.group===g).forEach(t=>{
       const isDH=t.rank>(S.config.dh||20);
       const owner=S.draft[t.name]||'';
+      const isUnowned=!owner;
       if(locked){
-        html+=`<div class="draft-card ${isDH?'dh':''}" style="${!owner?'opacity:0.45':''}">
+        html+=`<div class="draft-card ${isDH?'dh':''}" style="${isUnowned?'opacity:0.45':''}">
           <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
           <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
             <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
@@ -805,14 +827,14 @@ function renderDraft(){
             ${owner?`👤 ${owner}`:'<span style="opacity:0.5">— Unowned —</span>'}
           </div>
         </div>`;
-      }else{
+      } else {
         const opts=`<option value="">— Unowned —</option>`+players.map(p=>`<option value="${p}"${owner===p?' selected':''}>${p}</option>`).join('');
-        html+=`<div class="draft-card ${isDH?'dh':''}" style="${!owner?'opacity:0.6':''}">
+        html+=`<div class="draft-card ${isDH?'dh':''}" style="${isUnowned?'opacity:0.6':''}">
           <div class="draft-card-top"><span class="draft-flag">${t.flag}</span><span class="draft-name">${t.name}</span><span class="draft-rank">#${t.rank}</span></div>
           <div style="display:flex;gap:5px;align-items:center">
             <span class="draft-tier-pill" style="background:${tierC(t.rank)}30;border:1px solid ${tierC(t.rank)}60;color:${tierC(t.rank)}">${tierL(t.rank)}-TIER</span>
             ${isDH?'<span class="dh-badge">🌶️ ×1.5</span>':''}
-            ${!owner?'<span style="font-size:10px;color:var(--muted)">unowned</span>':''}
+            ${isUnowned?'<span style="font-size:10px;color:var(--muted)">unowned</span>':''}
           </div>
           <select class="draft-select" data-team="${t.name}">${opts}</select>
         </div>`;
@@ -822,22 +844,20 @@ function renderDraft(){
   });
   document.getElementById('draft-board').innerHTML=html;
 }
-
 function saveDraft(){
-  if(S.draftLocked){toast('🔒 Draft is locked.');return;}
+  if(S.draftLocked){toast('🔒 Draft is locked — unlock it first.');return;}
   document.querySelectorAll('.draft-select').forEach(s=>{
     if(s.value)S.draft[s.dataset.team]=s.value;else delete S.draft[s.dataset.team];
   });
-  saveLocal();syncWrite();
+  saveLocal();
+  syncWrite();
   renderLeaderboard();renderStandings();
   toast('Draft saved & synced ✓');
 }
-
 function autoDraft(){
-  if(S.draftLocked){toast('🔒 Draft is locked — unlock first.');return;}
-  if(!confirm('Auto-assign all teams randomly?'))return;
-  const numP=S.config.players||10;
-  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  if(S.draftLocked){toast('🔒 Draft is locked — unlock it first.');return;}
+  const numP=S.config.players||8;
+  const players=(S.playerNames||[]).slice(0,numP);
   const tpp=teamsPerPlayer(numP);
   const shuffled=[...TEAMS].sort(()=>Math.random()-0.5);
   S.draft={};
@@ -846,12 +866,12 @@ function autoDraft(){
     order.forEach((p,i)=>{const idx=round*players.length+(round%2===0?i:players.length-1-i);if(shuffled[idx])S.draft[shuffled[idx].name]=p;});
   }
   saveLocal();syncWrite();
-  renderDraft();renderLeaderboard();
-  toast('✅ Auto-draft complete');
+  renderDraft();renderLeaderboard();toast('Random draft done ✓');
 }
 
-
-
+// ═══════════════════════════════════════════════════════════════════
+// RENDER ADMIN
+// ═══════════════════════════════════════════════════════════════════
 function updatePlayerHint(){
   const n=parseInt(document.getElementById('cfg-players')?.value)||8;
   const tpp=teamsPerPlayer(n);
@@ -903,8 +923,8 @@ function renderAdmin(){
 }
 function saveConfig(){
   S.config.name=document.getElementById('cfg-name').value;
-  S.config.buyin=parseInt(document.getElementById('cfg-buyin').value)||100;
-  S.config.players=parseInt(document.getElementById('cfg-players').value)||10;
+  S.config.buyin=parseInt(document.getElementById('cfg-buyin').value)||50;
+  S.config.players=parseInt(document.getElementById('cfg-players').value)||8;
   S.config.dh=parseInt(document.getElementById('cfg-dh').value)||20;
   // Save all 16 slots so names aren't lost when toggling player count
   S.playerNames=Array.from({length:16},(_,i)=>document.getElementById(`pname-${i}`)?.value||'');
