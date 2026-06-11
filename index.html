@@ -369,7 +369,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     <div class="admin-card"><label>Number of Players</label><input id="cfg-players" type="number" min="2" max="16" onchange="updatePlayerHint()"><div class="hint" id="players-hint"></div></div>
     <div class="admin-card"><label>Dark Horse Threshold (rank)</label><input id="cfg-dh" type="number" min="1"><div class="hint">Above this = ×1.5 group pts</div></div>
   </div>
-  <div class="section-title">Player Names</div>
+  <div class="section-title">Player Names & Payment</div>
   <div class="admin-grid" id="player-names-grid"></div>
   <div class="btn-row" style="margin-bottom:24px">
     <button class="btn btn-gold" onclick="saveConfig()">💾 Save Settings</button>
@@ -530,7 +530,8 @@ let S={
   config:{name:"WC 2026 Fantasy Pool",buyin:50,players:8,dh:20},
   playerNames:["Alice","Bob","Carlos","Divya","Erik","Fatima","George","Hina","","","","","","","",""],
   draft:{},scores:{},teamStats:{},lastUpdated:null,
-  draftLocked:false
+  draftLocked:false,
+  paid:{}
 };
 let JSONBIN_KEY='$2a$10$2aGlgg1W28gK/lxQs0b16OtUkNJZd7vykGcJPgIyfJU2NIAS6Lu4u';
 let JSONBIN_ID='6a2a0b4eda38895dfeaa6c49';
@@ -683,7 +684,7 @@ function renderLeaderboard(){
     return `<div class="lb-card ${rc}">
       <div class="lb-rank">${i+1}</div>
       <div>
-        <div class="lb-name">${p.name}</div>
+        <div class="lb-name">${p.name} <span style="font-size:11px;padding:1px 6px;border-radius:4px;font-family:'Inter',sans-serif;font-weight:600;background:${(S.paid||{})[p.name]?'rgba(90,158,106,0.2)':'rgba(255,75,43,0.1)'};color:${(S.paid||{})[p.name]?'#5a9e6a':'var(--coral)'};border:1px solid ${(S.paid||{})[p.name]?'rgba(90,158,106,0.3)':'rgba(255,75,43,0.3)'}">${(S.paid||{})[p.name]?'✅ Paid':'❌ Owes $'+(S.config.buyin||100)}</span></div>
         <div class="lb-teams">${chips||'<span style="font-size:11px;color:var(--muted)">No teams</span>'}</div>
       </div>
       <div>
@@ -998,7 +999,17 @@ function autoDraft(){
 // ═══════════════════════════════════════════════════════════════════
 // RENDER ADMIN
 // ═══════════════════════════════════════════════════════════════════
-function updatePlayerHint(){
+function togglePaid(i){
+  const name=document.getElementById(`pname-${i}`)?.value||'';
+  if(!name)return;
+  if(!S.paid)S.paid={};
+  S.paid[name]=!S.paid[name];
+  saveLocal();syncWrite();
+  renderAdmin();
+  renderLeaderboard();
+  toast((S.paid[name]?'✅ ':'❌ ')+name+' marked as '+(S.paid[name]?'paid':'unpaid'));
+}
+  function updatePlayerHint(){
   const n=parseInt(document.getElementById('cfg-players')?.value)||8;
   const tpp=teamsPerPlayer(n);
   const u=unownedCount(n);
@@ -1017,9 +1028,18 @@ function renderAdmin(){
   document.getElementById('cfg-dh').value=S.config.dh||20;
   const n=S.config.players||8;
   // Always render all 16 slots, show/hide based on player count
-  document.getElementById('player-names-grid').innerHTML=Array.from({length:16},(_,i)=>`
-    <div class="admin-card" style="display:${i<n?'':'none'}"><label>Player ${i+1}</label>
-    <input type="text" id="pname-${i}" value="${(S.playerNames||[])[i]||''}"></div>`).join('');
+ document.getElementById('player-names-grid').innerHTML=Array.from({length:16},(_,i)=>{
+    const name=(S.playerNames||[])[i]||'';
+    const paid=(S.paid||{})[name]||false;
+    return `<div class="admin-card" style="display:${i<n?'':'none'}">
+      <label>Player ${i+1}</label>
+      <input type="text" id="pname-${i}" value="${name}">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer" onclick="togglePaid(${i})">
+        <div id="paid-dot-${i}" style="width:20px;height:20px;border-radius:4px;border:2px solid ${paid?'#5a9e6a':'var(--coral)'};background:${paid?'rgba(90,158,106,0.2)':'rgba(255,75,43,0.1)'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${paid?'✅':''}</div>
+        <span id="paid-label-${i}" style="font-size:12px;font-weight:600;color:${paid?'#5a9e6a':'var(--coral)'}">${paid?'Paid $'+( S.config.buyin||100):'Not Paid'}</span>
+      </div>
+    </div>`;
+  }).join('');
   updatePlayerHint();
   applyDraftLockUI();
   // KO tracker
