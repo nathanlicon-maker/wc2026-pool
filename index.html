@@ -242,7 +242,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 
 <!-- SCORES -->
 <div id="pane-scores" class="pane">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">   <div class="section-title" style="margin-bottom:0">Match Results <small>enter scores as games finish</small></div>   <button id="admin-score-btn" onclick="toggleScoreAdmin()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">🔒 Admin Login</button> </div>
+  <div class="section-title">Match Results <small>enter scores as games finish</small></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
     <button class="gf-btn active" id="view-today" onclick="setScoreView('today')">📅 Today</button>
     <button class="gf-btn" id="view-upcoming" onclick="setScoreView('upcoming')">⏭ Upcoming</button>
@@ -728,7 +728,6 @@ function updateTicker(lb){
 // ═══════════════════════════════════════════════════════════════════
 let scoreView='today';
 let myName='';
-let isAdmin=false;
 
 function setScoreView(v){
   scoreView=v;
@@ -738,33 +737,7 @@ function setScoreView(v){
   });
   renderScores();
 }
-  
-function toggleScoreAdmin(){
-  if(isAdmin){
-    isAdmin=false;
-    try{localStorage.removeItem('wc2026_admin');}catch(e){}
-    document.getElementById('admin-score-btn').textContent='🔒 Admin Login';
-    document.getElementById('admin-score-btn').style.color='var(--muted)';
-    document.getElementById('admin-score-btn').style.borderColor='var(--line)';
-    renderScores();
-    toast('Admin mode off');
-    return;
-  }
-  const pin=prompt('Enter admin PIN:');
-  if(pin===null)return;
-  if(pin==='2026'){
-    isAdmin=true;
-    try{localStorage.setItem('wc2026_admin','1');}catch(e){}
-    document.getElementById('admin-score-btn').textContent='🔓 Admin Mode ON';
-    document.getElementById('admin-score-btn').style.color='#5a9e6a';
-    document.getElementById('admin-score-btn').style.borderColor='#5a9e6a';
-    renderScores();
-    toast('✅ Admin mode on — you can now enter scores');
-  }else{
-    toast('❌ Wrong PIN');
-  }
-}
-  
+
 function setMyName(name){
   myName=name===myName?'':name;
   try{localStorage.setItem('wc2026_myName',myName);}catch(e){}
@@ -824,8 +797,7 @@ function renderMySchedule(){
         <div class="match-header"><span class="match-stage">${dot} ${timeStr} CT · Grp ${m.group}</span><span class="match-group" style="font-size:11px;color:var(--muted)">${m.venue}</span></div>
         <div class="match-row">
           <div class="match-team home" style="color:${homeIsmine?'var(--gold)':'var(--white)'};font-weight:${homeIsmine?'700':'600'}">${ht?.flag||''} ${m.home}${homeIsmine?' ⭐':''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.home]||''}</div></div>
-          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''}  ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}> 
-          <div class="match-team" style="color:${awayIsmine?
+          <input class="score-input ${hasH?'has-score':''}" type="number" min="0" max="20" value="${hg}" placeholder="—" onchange="setScore(${m.id},'hg',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="score-sep">:</div>
           <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="match-team" style="color:${awayIsmine?'var(--gold)':'var(--white)'};font-weight:${awayIsmine?'700':'600'}">${m.away}${awayIsmine?' ⭐':''} ${at?.flag||''}<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:2px">${S.draft[m.away]||''}</div></div>
@@ -893,10 +865,9 @@ function renderScores(){
         <div class="match-header"><span class="match-stage">${dot} ${timeStr} CT · Grp ${m.group}</span><span class="match-group" style="font-size:11px;color:var(--muted)">${m.venue}</span></div>
         <div class="match-row">
           <div class="match-team home">${ht?.flag||''} ${m.home}</div>
-          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''} ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}>
+          <input class="score-input ${hasH?'has-score':''}" type="number" min="0" max="20" value="${hg}" placeholder="—" onchange="setScore(${m.id},'hg',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="score-sep">:</div>
-          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" ${isAdmin?`onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')"`:''}  ${!isAdmin?'disabled style="opacity:0.4;cursor:not-allowed"':''}>
-          <div class="match-team">${m.away}
+          <input class="score-input ${hasA?'has-score':''}" type="number" min="0" max="20" value="${ag}" placeholder="—" onchange="setScore(${m.id},'ag',this.value)" oninput="this.classList.toggle('has-score',this.value!=='')">
           <div class="match-team">${m.away} ${at?.flag||''}</div>
         </div>
         ${winner?`<div class="match-winner">${winner}</div>`:''}
@@ -1536,7 +1507,6 @@ function toast(msg){
 // ═══════════════════════════════════════════════════════════════════
 loadLocal();
 try{myName=localStorage.getItem('wc2026_myName')||'';}catch(e){}
-try{isAdmin=localStorage.getItem('wc2026_admin')==='1';}catch(e){}
 try{if(myName)teamsFilter=myName;}catch(e){}
 setSyncStatus('syncing','Connecting...');
 syncRead().then(()=>startAutoSync());
