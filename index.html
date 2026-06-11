@@ -75,9 +75,9 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 .lb-prize{font-size:11px;color:#5a9e6a;font-weight:600;margin-top:2px;text-align:right}
 
 /* PRIZE BAR */
-.prize-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:18px}
+.prize-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
 .prize-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px;text-align:center}
-.prize-card .p-amount{font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:800;color:var(--gold)}
+.prize-card .p-amount{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:var(--gold)}
 .prize-card .p-label{font-size:10px;color:var(--muted);margin-top:2px}
 .prize-card .p-name{font-size:13px;font-weight:600;color:var(--white);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -221,7 +221,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 
 <!-- LEADERBOARD -->
 <div id="pane-leaderboard" class="pane active">
-  <div id="prize-bar" class="prize-bar" style="max-width:600px;margin:0 auto 18px;"></div>
+  <div id="prize-bar" class="prize-bar" style="max-width:700px;margin:0 auto 18px;"></div>
   <div class="section-title">Live Standings <small id="lb-updated"></small></div>
   <div id="leaderboard-list" class="leaderboard"></div>
 </div>
