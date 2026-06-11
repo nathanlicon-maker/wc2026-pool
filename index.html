@@ -307,11 +307,9 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
       <div class="rule-row"><span>All-Star XI player</span><span class="rv">+5 pts ea.</span></div>
     </div>
     <div class="rules-card"><h3>💰 Prizes</h3>
-      <div class="rule-row"><span>🥇 1st</span><span class="rv">55%</span></div>
+      <div class="rule-row"><span>🥇 1st</span><span class="rv">65%</span></div>
       <div class="rule-row"><span>🥈 2nd</span><span class="rv">25%</span></div>
-      <div class="rule-row"><span>🥉 3rd</span><span class="rv">12%</span></div>
-      <div class="rule-row"><span>🎯 Best team</span><span class="rv">5%</span></div>
-      <div class="rule-row"><span>😬 Worst pick</span><span class="rv">Buy-in back</span></div>
+      <div class="rule-row"><span>🥉 3rd</span><span class="rv">10%</span></div>
     </div>
     <div class="rules-card"><h3>🐍 Draft</h3>
       <div class="rule-row"><span>Format</span><span class="rv" style="font-size:13px">Snake</span></div>
@@ -588,8 +586,8 @@ function renderLeaderboard(){
   const pool=(S.config.buyin||50)*(S.config.players||8);
   document.getElementById('header-prize').textContent=`💰 $${pool} Pool`;
   document.getElementById('prize-bar').innerHTML=[
-    {label:"🥇 1st",pct:.55,idx:0},{label:"🥈 2nd",pct:.25,idx:1},
-    {label:"🥉 3rd",pct:.12,idx:2},{label:"🎯 Best Team",pct:.05,idx:-1}
+    {label:"🥇 1st",pct:.65,idx:0},{label:"🥈 2nd",pct:.25,idx:1},
+    {label:"🥉 3rd",pct:.10,idx:2}
   ].map(p=>`<div class="prize-card">
     <div class="p-amount">$${Math.round(pool*p.pct)}</div>
     <div class="p-label">${p.label}</div>
