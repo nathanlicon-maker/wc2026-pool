@@ -755,8 +755,11 @@ function renderMySchedule(){
     btnContainer.innerHTML=`<span style="font-size:12px;font-weight:600;color:var(--muted);align-self:center;margin-right:4px">I am:</span>`+
       players.map(p=>`<button onclick="setMyName('${p}')" style="padding:5px 14px;border-radius:20px;border:2px solid ${myName===p?'var(--gold)':'var(--line)'};background:${myName===p?'rgba(212,168,67,0.15)':'transparent'};color:${myName===p?'var(--gold)':'var(--muted)'};font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s">${p}</button>`).join('');
   }
-  if(!myName||!section){if(section)section.style.display='none';return;}
-  section.style.display='block';
+  if(section) section.style.display='block';
+  if(!myName){
+    document.getElementById('my-matches-container').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Tap your name above to see your teams\' matches.</div>';
+    return;
+  }
   const myTeams=TEAMS.filter(t=>S.draft[t.name]===myName);
   if(!myTeams.length){
     document.getElementById('my-matches-container').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">No teams assigned yet.</div>';
@@ -1491,7 +1494,7 @@ function showTab(name,btn){
   if(name==='admin')renderAdmin();
   if(name==='power')renderPowerRankings();
 }
-function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();}
+function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();renderMySchedule();}
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
