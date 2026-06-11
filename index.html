@@ -212,6 +212,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="leaderboard" onclick="showTab('leaderboard',this)">🏅 Leaderboard</button>
   <button class="tab-btn" data-tab="scores"      onclick="showTab('scores',this)">📊 Scores</button>
+  <button class="tab-btn" data-tab="power"       onclick="showTab('power',this)">⚡ Power Rankings</button>
   <button class="tab-btn" data-tab="standings"   onclick="showTab('standings',this)">📋 Teams</button>
   <button class="tab-btn" data-tab="draft"       onclick="showTab('draft',this)">🌍 Draft</button>
   <button class="tab-btn" data-tab="rules"       onclick="showTab('rules',this)">📖 Rules</button>
@@ -223,6 +224,19 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div id="prize-bar" class="prize-bar"></div>
   <div class="section-title">Live Standings <small id="lb-updated"></small></div>
   <div id="leaderboard-list" class="leaderboard"></div>
+</div>
+
+<!-- POWER RANKINGS -->
+<div id="pane-power" class="pane">
+  <div class="section-title">⚡ Power Rankings <small>current pts + future potential</small></div>
+  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:11px 15px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7">
+    <strong style="color:var(--gold)">How it works:</strong>
+    Power Score = Current Points + Potential Points from remaining teams still alive.
+    Ceiling = max pts if all your remaining teams win everything.
+    Floor = pts if all remaining teams exit next round.
+    Tier: 🔥 Hot (top 3) · ✅ Solid (mid) · ❄️ Cold (bottom 3)
+  </div>
+  <div id="power-rankings-content"></div>
 </div>
 
 <!-- SCORES -->
@@ -1073,8 +1087,254 @@ function resetAll(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TABS & UTILS
+// POWER RANKINGS ENGINE
 // ═══════════════════════════════════════════════════════════════════
+
+// Max additional points a team can earn from a given stage onward
+function maxRemainingPts(teamName){
+  const t=TEAMS.find(x=>x.name===teamName);
+  if(!t)return 0;
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  const isDH=t.rank>(S.config.dh||20);
+  const dhMult=isDH?1.5:1;
+  // Already eliminated
+  if(['GS','GX'].includes(fin))return 0;
+  // Still in group stage — estimate remaining group + full KO run
+  const koMax=8+10+15+20+40; // R32+R16+QF+SF+Champion
+  const groupRemaining=3*2; // ~2 wins remaining avg
+  if(!fin){
+    // Still in group stage — group pts potential + full KO
+    return Math.round((groupRemaining*5+3*3)*dhMult + koMax*2); // goals bonus included
+  }
+  // Knocked out stages — 0 remaining
+  if(fin==='W'||fin==='RU'||fin==='3P')return 0;
+  // Calculate based on stage
+  const stageMax={
+    R32: 10+15+20+40,  // still has R16, QF, SF, Final
+    R16: 15+20+40,
+    QF:  20+40,
+    SF:  40,
+  };
+  return Math.round((stageMax[fin]||0) * (fin==='R32'?1:1) + 10); // +10 for goals estimate
+}
+
+// Min additional pts (exit next round)
+function minRemainingPts(teamName){
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  if(['GS','GX','W','RU','3P'].includes(fin))return 0;
+  if(!fin)return 0; // group stage, could go out
+  const stageMin={R32:0,R16:0,QF:0,SF:20}; // at SF you're guaranteed RU (20pts)
+  return stageMin[fin]||0;
+}
+
+function isTeamAlive(teamName){
+  const ts=S.teamStats[teamName]||{};
+  const fin=ts.final||'';
+  return !['GS','GX'].includes(fin);
+}
+
+function calcPowerScore(playerName){
+  const teams=playerTeams(playerName);
+  const currentPts=calcPlayerPts(playerName);
+  let potential=0, ceiling=0, floor=0, aliveCount=0;
+  teams.forEach(t=>{
+    const alive=isTeamAlive(t.name);
+    if(alive){
+      aliveCount++;
+      const maxR=maxRemainingPts(t.name);
+      const minR=minRemainingPts(t.name);
+      potential+=maxR*0.4; // weighted average potential
+      ceiling+=maxR;
+      floor+=minR;
+    }
+  });
+  return {
+    currentPts,
+    potential:Math.round(potential),
+    powerScore:Math.round(currentPts+potential),
+    ceiling:currentPts+ceiling,
+    floor:currentPts+floor,
+    aliveCount,
+    totalTeams:teams.length,
+    teams
+  };
+}
+
+function renderPowerRankings(){
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  if(players.every(p=>playerTeams(p).length===0)){
+    document.getElementById('power-rankings-content').innerHTML=
+      '<div style="text-align:center;padding:40px;color:var(--muted)">Complete the draft first to see power rankings.</div>';
+    return;
+  }
+
+  const ranked=players.map(p=>({name:p,...calcPowerScore(p)}))
+    .sort((a,b)=>b.powerScore-a.powerScore);
+
+  const maxPower=ranked[0]?.powerScore||1;
+  const maxCeiling=Math.max(...ranked.map(r=>r.ceiling));
+
+  // Tier assignment
+  const getTier=(i,total)=>{
+    if(i<Math.ceil(total*0.3))return {label:'🔥 Hot',color:'#FF6B35',bg:'rgba(255,107,53,0.12)',border:'rgba(255,107,53,0.35)'};
+    if(i>=total-Math.ceil(total*0.3))return {label:'❄️ Cold',color:'#64B5F6',bg:'rgba(100,181,246,0.12)',border:'rgba(100,181,246,0.35)'};
+    return {label:'✅ Solid',color:'#5a9e6a',bg:'rgba(90,158,106,0.12)',border:'rgba(90,158,106,0.35)'};
+  };
+
+  let html='';
+
+  // ── BAR CHART ──────────────────────────────────────────────────────
+  html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.04em;margin-bottom:14px">
+      📊 POWER SCORE CHART
+    </div>`;
+
+  ranked.forEach((r,i)=>{
+    const tier=getTier(i,ranked.length);
+    const barPct=Math.round((r.powerScore/maxPower)*100);
+    const ceilPct=Math.round((r.ceiling/maxCeiling)*100);
+    html+=`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--muted);min-width:22px">${i+1}</span>
+          <span style="font-weight:700;font-size:14px">${r.name}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${tier.bg};border:1px solid ${tier.border};color:${tier.color};font-weight:600">${tier.label}</span>
+        </div>
+        <div style="text-align:right">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${tier.color}">${r.powerScore}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:3px">PWR</span>
+        </div>
+      </div>
+      <div style="position:relative;height:22px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+        <!-- Ceiling bar (faint) -->
+        <div style="position:absolute;left:0;top:0;height:100%;width:${ceilPct}%;background:rgba(212,168,67,0.15);border-radius:4px"></div>
+        <!-- Power score bar -->
+        <div style="position:absolute;left:0;top:0;height:100%;width:${barPct}%;background:linear-gradient(90deg,${tier.color}cc,${tier.color});border-radius:4px;transition:width 0.6s ease"></div>
+        <div style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(255,255,255,0.5)">ceil: ${r.ceiling}</div>
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+
+  // ── DETAILED CARDS ──────────────────────────────────────────────
+  html+=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.04em;margin-bottom:12px">
+    🃏 DETAILED BREAKDOWN
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px">`;
+
+  ranked.forEach((r,i)=>{
+    const tier=getTier(i,ranked.length);
+    const prize=[S.config.buyin*S.config.players*0.65,
+                 S.config.buyin*S.config.players*0.25,
+                 S.config.buyin*S.config.players*0.10];
+    const prizeStr=i<3?`<span style="color:#5a9e6a;font-weight:600;font-size:12px">$${Math.round(prize[i])} if holds</span>`:'';
+
+    // Team chips with alive/eliminated status
+    const teamChips=r.teams.map(t=>{
+      const pts=calcTeamPts(t.name);
+      const alive=isTeamAlive(t.name);
+      const isDH=t.rank>(S.config.dh||20);
+      const ts=S.teamStats[t.name]||{};
+      const stageMap={W:'🏆',RU:'🥈',SF:'🥉',QF:'⚽',R16:'R16',R32:'R32',GS:'❌',GX:'❌','':'?'};
+      const stageIcon=stageMap[ts.final||'']||'?';
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;
+        background:${alive?'rgba(255,255,255,0.07)':'rgba(255,75,43,0.08)'};
+        border:1px solid ${alive?(isDH?'rgba(212,168,67,0.4)':'rgba(255,255,255,0.12)'):'rgba(255,75,43,0.3)'};
+        font-size:11px;opacity:${alive?1:0.6}">
+        ${t.flag} ${t.name} ${isDH?'🌶️':''} <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--gold)">${pts}</span> ${stageIcon}
+      </span>`;
+    }).join('');
+
+    // Floor/ceiling bar
+    const rangeWidth=r.ceiling-r.floor;
+    const rangeBarPct=maxCeiling>0?Math.round((rangeWidth/maxCeiling)*50):0;
+    const floorPct=maxCeiling>0?Math.round((r.floor/maxCeiling)*100):0;
+
+    html+=`<div style="background:var(--card);border:1px solid ${tier.border};border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:${tier.color}">${i+1}</span>
+          <div>
+            <div style="font-weight:700;font-size:15px">${r.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${r.aliveCount}/${r.totalTeams} teams still alive</div>
+          </div>
+          <span style="font-size:12px;padding:3px 10px;border-radius:12px;background:${tier.bg};border:1px solid ${tier.border};color:${tier.color};font-weight:700">${tier.label}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:${tier.color};line-height:1">${r.powerScore}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Power Score</div>
+          ${prizeStr}
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        ${[
+          ['Current','🏅',r.currentPts,'var(--white)'],
+          ['Potential','🚀','+'+r.potential,'var(--gold)'],
+          ['Ceiling','📈',r.ceiling,'#5a9e6a'],
+          ['Floor','📉',r.floor,'var(--muted)'],
+        ].map(([label,icon,val,color])=>`
+          <div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px;text-align:center">
+            <div style="font-size:14px">${icon}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:${color}">${val}</div>
+            <div style="font-size:10px;color:var(--muted)">${label}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Floor to ceiling range bar -->
+      <div style="margin-bottom:10px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between">
+          <span>Floor: ${r.floor}</span><span>Ceiling: ${r.ceiling}</span>
+        </div>
+        <div style="height:8px;background:rgba(255,255,255,0.05);border-radius:4px;position:relative">
+          <div style="position:absolute;left:${floorPct}%;width:${rangeBarPct}%;height:100%;background:linear-gradient(90deg,${tier.color}66,${tier.color});border-radius:4px"></div>
+          <div style="position:absolute;left:${maxCeiling>0?Math.round((r.powerScore/maxCeiling)*100):0}%;transform:translateX(-50%);width:3px;height:100%;background:${tier.color};border-radius:2px"></div>
+        </div>
+      </div>
+
+      <!-- Team chips -->
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${teamChips}</div>
+    </div>`;
+  });
+
+  html+='</div>';
+
+  // ── INSIGHTS ───────────────────────────────────────────────────
+  const leader=ranked[0];
+  const mostAlive=ranked.reduce((a,b)=>a.aliveCount>b.aliveCount?a:b);
+  const highestCeiling=ranked.reduce((a,b)=>a.ceiling>b.ceiling?a:b);
+  const biggestGap=leader.powerScore-(ranked[ranked.length-1]?.powerScore||0);
+
+  html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-top:16px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:12px">💡 KEY INSIGHTS</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+      <div style="padding:8px 12px;background:rgba(255,107,53,0.08);border-radius:6px;border-left:3px solid #FF6B35">
+        🔥 <strong>${leader.name}</strong> leads with a power score of <strong>${leader.powerScore}</strong>
+        — ${leader.potential>0?`still has +${leader.potential} pts of potential remaining`:'most teams eliminated, riding current pts'}
+      </div>
+      <div style="padding:8px 12px;background:rgba(90,158,106,0.08);border-radius:6px;border-left:3px solid #5a9e6a">
+        📈 <strong>${highestCeiling.name}</strong> has the highest ceiling at <strong>${highestCeiling.ceiling} pts</strong>
+        — biggest upside if teams run deep
+      </div>
+      <div style="padding:8px 12px;background:rgba(212,168,67,0.08);border-radius:6px;border-left:3px solid var(--gold)">
+        ⚽ <strong>${mostAlive.name}</strong> has the most teams still alive
+        (<strong>${mostAlive.aliveCount}</strong>) — most tournament exposure remaining
+      </div>
+      <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:6px;border-left:3px solid var(--muted)">
+        📊 Gap between 1st and last: <strong>${biggestGap} pts</strong>
+        — ${biggestGap<30?'extremely tight, anyone can win':'significant lead, tough to catch up'}
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('power-rankings-content').innerHTML=html;
+}
+
+
 function showTab(name,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1085,6 +1345,7 @@ function showTab(name,btn){
   if(name==='standings')renderStandings();
   if(name==='draft')renderDraft();
   if(name==='admin')renderAdmin();
+  if(name==='power')renderPowerRankings();
 }
 function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();}
 function toast(msg){
