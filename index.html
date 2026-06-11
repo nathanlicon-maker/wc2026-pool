@@ -475,25 +475,25 @@ function setSyncStatus(state,msg){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// GOOGLE SHEETS SYNC — via allorigins.win proxy (mobile compatible)
+// GOOGLE SHEETS SYNC — text/plain skips CORS preflight, works mobile
 // ═══════════════════════════════════════════════════════════════════
-
-// Wraps any URL through allorigins to bypass CORS on mobile
-function proxied(url){
-  return 'https://api.allorigins.win/get?url='+encodeURIComponent(url);
-}
 
 async function syncRead(){
   if(!SCRIPT_URL)return;
   setSyncStatus('syncing','Fetching latest data...');
   isSyncing=true;
   try{
-    const target=SCRIPT_URL+'?action=read&t='+Date.now();
-    const res=await fetch(proxied(target));
-    if(!res.ok)throw new Error('Proxy returned '+res.status);
-    const wrapper=await res.json();
-    if(!wrapper.contents)throw new Error('Empty proxy response');
-    const data=JSON.parse(wrapper.contents);
+    // GET with no custom headers — no preflight, works on all browsers including mobile
+    const res=await fetch(SCRIPT_URL+'?action=read&t='+Date.now(),{
+      method:'GET',
+      redirect:'follow'
+    });
+    const text=await res.text();
+    // Apps Script sometimes wraps in HTML on first load — strip it
+    const jsonStart=text.indexOf('{');
+    const jsonEnd=text.lastIndexOf('}');
+    if(jsonStart===-1)throw new Error('No JSON in response');
+    const data=JSON.parse(text.slice(jsonStart,jsonEnd+1));
     if(data.error)throw new Error(data.error);
     if(data.config)S.config={...S.config,...data.config};
     if(data.playerNames&&data.playerNames.length)S.playerNames=data.playerNames;
@@ -507,7 +507,8 @@ async function syncRead(){
     updateLastSync();
     renderAll();
   }catch(e){
-    setSyncStatus('error','Sync failed — showing cached data');
+    // Fall back to cached local data silently
+    setSyncStatus('error','Using cached data — tap ↻ to retry');
     console.error('Sync read error:',e);
     renderAll();
   }
@@ -518,24 +519,25 @@ async function syncWrite(){
   if(!SCRIPT_URL)return;
   setSyncStatus('syncing','Saving...');
   try{
-    // Writes go direct POST — proxy is read-only, POST still works on most mobile
+    // text/plain content-type skips CORS preflight — key trick for mobile
     const res=await fetch(SCRIPT_URL,{
       method:'POST',
       headers:{'Content-Type':'text/plain'},
       body:JSON.stringify({action:'write',data:S}),
       redirect:'follow'
     });
-    const data=await res.json();
+    const text=await res.text();
+    const jsonStart=text.indexOf('{');
+    const jsonEnd=text.lastIndexOf('}');
+    if(jsonStart===-1)throw new Error('No JSON in response');
+    const data=JSON.parse(text.slice(jsonStart,jsonEnd+1));
     if(data.error)throw new Error(data.error);
     setSyncStatus('ok','Saved ✓');
     updateLastSync();
   }catch(e){
-    // If POST fails, store locally and retry on next sync
     saveLocal();
-    setSyncStatus('ok','Saved locally — will sync shortly');
-    console.warn('Write fell back to local:',e);
-    // Queue a read sync in 3s so other devices stay updated
-    setTimeout(syncRead, 3000);
+    setSyncStatus('ok','Saved locally');
+    console.warn('Write error:',e);
   }
 }
 
