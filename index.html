@@ -740,7 +740,7 @@ function renderDailyRecap(){
     return d.toDateString()===lastMatchDate.toDateString();
   });
 
-  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-11'))/(1000*60*60*24))+1);
+  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-10T23:59:00-05:00'))/(1000*60*60*24)));
 
   // Build WC results
   let resultsHtml='';
