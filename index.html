@@ -224,7 +224,8 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div id="pane-leaderboard" class="pane active">
   <div id="prize-bar" class="prize-bar" style="max-width:700px;margin:0 auto 18px;"></div>
   <div class="section-title">Live Standings <small id="lb-updated"></small></div>
-  <div id="leaderboard-list" class="leaderboard"></div>
+  <div id="leaderboard-list" class="leaderboard"></div> 
+  <div id="daily-recap"></div>
 </div>
 
 <!-- POWER RANKINGS -->
@@ -714,6 +715,144 @@ function renderLeaderboard(){
     document.getElementById('lb-updated').textContent=`Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
   }
   updateTicker(lb);
+  renderDailyRecap();
+}
+
+function renderDailyRecap(){
+  const today=new Date();
+  const dayNum=Math.max(1,Math.floor((today-new Date('2026-06-11'))/(1000*60*60*24))+1);
+
+  // Get today's completed matches
+  const todayMatches=MATCHES.filter(m=>{
+    const d=new Date(m.dt+':00-05:00');
+    return d.toDateString()===today.toDateString();
+  });
+  const completed=todayMatches.filter(m=>{
+    const sc=S.scores[m.id]||{};
+    return sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null;
+  });
+
+  if(!completed.length){
+    document.getElementById('daily-recap').innerHTML='';
+    return;
+  }
+
+  // Build WC results
+  let resultsHtml='';
+  completed.forEach(m=>{
+    const sc=S.scores[m.id];
+    const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
+    const ht=TEAMS.find(t=>t.name===m.home);
+    const at=TEAMS.find(t=>t.name===m.away);
+    const hOwner=S.draft[m.home]||'';
+    const aOwner=S.draft[m.away]||'';
+    const winner=hg>ag?m.home:ag>hg?m.away:'Draw';
+    const isDraw=hg===ag;
+    resultsHtml+=`
+      <div style="background:var(--card2);border-radius:8px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <span style="font-size:18px">${ht?.flag||''}</span>
+            <div>
+              <div style="font-weight:${hg>ag?'700':'400'};font-size:13px;color:${hg>ag?'var(--white)':'var(--muted)'}">${m.home}</div>
+              ${hOwner?`<div style="font-size:10px;color:var(--muted)">${hOwner}</div>`:''}
+            </div>
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--gold);text-align:center;min-width:60px">${hg} - ${ag}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end">
+            <div style="text-align:right">
+              <div style="font-weight:${ag>hg?'700':'400'};font-size:13px;color:${ag>hg?'var(--white)':'var(--muted)'}">${m.away}</div>
+              ${aOwner?`<div style="font-size:10px;color:var(--muted)">${aOwner}</div>`:''}
+            </div>
+            <span style="font-size:18px">${at?.flag||''}</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center">
+          ${isDraw?'⚖️ Draw':`🏆 ${winner} win`} · Group ${m.group} · ${m.venue}
+        </div>
+      </div>`;
+  });
+
+  // Build player pts today
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+  const todayIds=new Set(completed.map(m=>m.id));
+
+  const playerDayPts=players.map(p=>{
+    const teams=playerTeams(p);
+    let pts=0;
+    let teamsPlayed=[];
+    teams.forEach(t=>{
+      MATCHES.filter(m=>todayIds.has(m.id)&&(m.home===t.name||m.away===t.name)).forEach(m=>{
+        const sc=S.scores[m.id]||{};
+        if(sc.hg===''||sc.hg==null)return;
+        const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
+        const isDH=t.rank>(S.config.dh||20);
+        const mult=isDH?1.5:1;
+        let teamPts=0;
+        if(m.home===t.name){
+          const posPts=hg>ag?5:hg===ag?2:0;
+          const negPts=hg<ag?-1:0;
+          teamPts=Math.round((posPts*mult+hg)*10)/10+negPts;
+        } else {
+          const posPts=ag>hg?5:ag===hg?2:0;
+          const negPts=ag<hg?-1:0;
+          teamPts=Math.round((posPts*mult+ag)*10)/10+negPts;
+        }
+        pts+=teamPts;
+        teamsPlayed.push({team:t,pts:teamPts,m});
+      });
+    });
+    return{name:p,pts:Math.round(pts*10)/10,teamsPlayed};
+  }).filter(p=>p.teamsPlayed.length>0).sort((a,b)=>b.pts-a.pts);
+
+  let playerHtml='';
+  playerDayPts.forEach((p,i)=>{
+    const medals=['🥇','🥈','🥉'];
+    const medal=medals[i]||`${i+1}.`;
+    const chips=p.teamsPlayed.map(({team,pts,m})=>{
+      const sc=S.scores[m.id];
+      const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
+      const isHome=m.home===team.name;
+      const scored=isHome?hg:ag;
+      const conceded=isHome?ag:hg;
+      const result=scored>conceded?'W':scored===conceded?'D':'L';
+      const resultColor=result==='W'?'#5a9e6a':result==='D'?'var(--muted)':'var(--coral)';
+      return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:11px">
+        ${team.flag} ${team.name}
+        <span style="font-weight:700;color:${resultColor}">${result} ${scored}-${conceded}</span>
+        <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>
+      </span>`;
+    }).join('');
+    playerHtml+=`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card2);border-radius:7px;margin-bottom:6px;flex-wrap:wrap">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;min-width:28px">${medal}</span>
+        <span style="font-weight:700;font-size:14px;min-width:80px">${p.name}</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${p.pts>0?'var(--gold)':p.pts<0?'var(--coral)':'var(--muted)'}">${p.pts>0?'+':''}${p.pts}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
+      </div>`;
+  });
+
+  document.getElementById('daily-recap').innerHTML=`
+    <div style="margin-top:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:700;color:var(--white);letter-spacing:0.02em">
+          📅 DAY ${dayNum} RECAP
+        </div>
+        <div style="font-size:12px;color:var(--muted)">${today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:8px;text-transform:uppercase">⚽ Match Results</div>
+          ${resultsHtml}
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:8px;text-transform:uppercase">🏅 Points Earned Today</div>
+          ${playerHtml||'<div style="color:var(--muted);font-size:13px">No pool teams played today</div>'}
+        </div>
+      </div>
+    </div>`;
 }
 
 function updateTicker(lb){
