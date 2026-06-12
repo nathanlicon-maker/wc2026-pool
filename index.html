@@ -268,8 +268,10 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     <span style="font-size:12px;font-weight:600;color:var(--muted)">Filter:</span>
     <button class="gf-btn active" id="teams-filter-all" onclick="setTeamsFilter('')">All Teams</button>
     <div id="teams-filter-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <button class="gf-btn" id="teams-view-groups-btn" onclick="toggleGroupView()" style="margin-left:auto">🌍 Group View</button>
   </div>
-  <div style="overflow-x:auto">
+  <div id="group-standings-container" style="display:none"></div>
+  <div id="standings-table-wrap" style="overflow-x:auto">
     <table class="standings-table">
       <thead><tr>
         <th>#</th><th></th><th>Team</th><th>Owner</th><th>Grp</th><th>Stage</th>
@@ -1058,6 +1060,91 @@ function setTeamsFilter(name){
     b.style.color=b.dataset.player===name?'var(--gold)':'var(--muted)';
   });
   renderStandings();
+}
+
+let groupViewActive=false;
+
+function toggleGroupView(){
+  groupViewActive=!groupViewActive;
+  const btn=document.getElementById('teams-view-groups-btn');
+  const tableWrap=document.getElementById('standings-table-wrap');
+  const groupContainer=document.getElementById('group-standings-container');
+  if(groupViewActive){
+    btn.classList.add('active');
+    if(tableWrap)tableWrap.style.display='none';
+    if(groupContainer)groupContainer.style.display='block';
+    renderGroupStandings();
+  } else {
+    btn.classList.remove('active');
+    if(tableWrap)tableWrap.style.display='block';
+    if(groupContainer)groupContainer.style.display='none';
+  }
+}
+
+function renderGroupStandings(){
+  const groups=['A','B','C','D','E','F','G','H','I','J','K','L'];
+  let html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">';
+  groups.forEach(g=>{
+    const teamsInGroup=TEAMS.filter(t=>t.group===g).map(t=>({
+      ...t,
+      ts:S.teamStats[t.name]||{},
+      owner:S.draft[t.name]||'—',
+      pts:calcTeamPts(t.name),
+      gp:(S.teamStats[t.name]?.gw||0)+(S.teamStats[t.name]?.gd||0)+(S.teamStats[t.name]?.gl||0),
+      gw:S.teamStats[t.name]?.gw||0,
+      gd:S.teamStats[t.name]?.gd||0,
+      gl:S.teamStats[t.name]?.gl||0,
+      gf:S.teamStats[t.name]?.gf||0,
+      wcPts:(S.teamStats[t.name]?.gw||0)*3+(S.teamStats[t.name]?.gd||0),
+    })).sort((a,b)=>b.wcPts-a.wcPts||b.gf-a.gf);
+    html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden">
+      <div style="background:var(--card2);padding:10px 14px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold);letter-spacing:0.06em">GROUP ${g}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:rgba(255,255,255,0.03)">
+          <th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600;font-size:10px">#</th>
+          <th style="padding:6px 10px;text-align:left;color:var(--muted);font-weight:600;font-size:10px">TEAM</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">GP</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">W</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">D</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">L</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">GF</th>
+          <th style="padding:6px 4px;text-align:center;color:var(--muted);font-weight:600;font-size:10px">PTS</th>
+          <th style="padding:6px 8px;text-align:right;color:var(--muted);font-weight:600;font-size:10px">OWNER</th>
+          <th style="padding:6px 8px;text-align:right;color:var(--gold);font-weight:600;font-size:10px">POOL</th>
+        </tr></thead>
+        <tbody>
+          ${teamsInGroup.map((t,i)=>{
+            const isDH=t.rank>(S.config.dh||20);
+            const rowBg=i===0?'rgba(212,168,67,0.06)':i===1?'rgba(90,158,106,0.04)':'';
+            const borderLeft=i===0?'3px solid var(--gold)':i===1?'3px solid #5a9e6a':'3px solid transparent';
+            return `<tr style="background:${rowBg};border-bottom:1px solid var(--line);border-left:${borderLeft}">
+              <td style="padding:8px 10px;color:var(--muted);font-weight:600">${i+1}</td>
+              <td style="padding:8px 10px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:16px">${t.flag}</span>
+                  <div>
+                    <div style="font-weight:600;color:${i<2?'var(--white)':'var(--muted)'}">${t.name}</div>
+                    ${isDH?'<span style="font-size:9px;color:var(--gold);font-weight:700">×1.5 DH</span>':''}
+                  </div>
+                </div>
+              </td>
+              <td style="padding:8px 4px;text-align:center;color:var(--muted)">${t.gp}</td>
+              <td style="padding:8px 4px;text-align:center;color:#5a9e6a;font-weight:600">${t.gw}</td>
+              <td style="padding:8px 4px;text-align:center;color:var(--muted)">${t.gd}</td>
+              <td style="padding:8px 4px;text-align:center;color:var(--coral)">${t.gl}</td>
+              <td style="padding:8px 4px;text-align:center">${t.gf}</td>
+              <td style="padding:8px 4px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--white)">${t.wcPts}</td>
+              <td style="padding:8px 8px;text-align:right"><span style="background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:10px;color:var(--muted)">${t.owner}</span></td>
+              <td style="padding:8px 8px;text-align:right;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--gold)">${t.pts}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="padding:6px 10px;font-size:10px;color:var(--muted);background:rgba(255,255,255,0.02)">🟡 1st · 🟢 2nd · Top 2 advance + best 3rd-place teams</div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('group-standings-container').innerHTML=html;
 }
 
 function renderStandings(){
