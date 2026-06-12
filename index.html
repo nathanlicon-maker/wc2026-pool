@@ -719,23 +719,28 @@ function renderLeaderboard(){
 }
 
 function renderDailyRecap(){
-  const today=new Date();
-  const dayNum=Math.max(1,Math.floor((today-new Date('2026-06-11'))/(1000*60*60*24))+1);
 
-  // Get today's completed matches
-  const todayMatches=MATCHES.filter(m=>{
-    const d=new Date(m.dt+':00-05:00');
-    return d.toDateString()===today.toDateString();
-  });
-  const completed=todayMatches.filter(m=>{
+
+  // Find most recent day with completed scores
+  const allCompleted=MATCHES.filter(m=>{
     const sc=S.scores[m.id]||{};
     return sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null;
-  });
+  }).sort((a,b)=>new Date(b.dt+':00-05:00')-new Date(a.dt+':00-05:00'));
 
-  if(!completed.length){
+  if(!allCompleted.length){
     document.getElementById('daily-recap').innerHTML='';
     return;
   }
+
+  // Get the most recent match date
+  const lastMatchDate=new Date(allCompleted[0].dt+':00-05:00');
+  const recapDate=lastMatchDate;
+  const completed=allCompleted.filter(m=>{
+    const d=new Date(m.dt+':00-05:00');
+    return d.toDateString()===lastMatchDate.toDateString();
+  });
+
+  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-11'))/(1000*60*60*24))+1);
 
   // Build WC results
   let resultsHtml='';
@@ -839,7 +844,7 @@ function renderDailyRecap(){
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:700;color:var(--white);letter-spacing:0.02em">
           📅 DAY ${dayNum} RECAP
         </div>
-        <div style="font-size:12px;color:var(--muted)">${today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+        <div style="font-size:12px;color:var(--muted)">${recapDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
