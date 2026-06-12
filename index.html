@@ -794,16 +794,7 @@ function renderDailyRecap(){
         const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
         const isDH=t.rank>(S.config.dh||20);
         const mult=isDH?1.5:1;
-        let teamPts=0;
-        if(m.home===t.name){
-          const posPts=hg>ag?5:hg===ag?2:0;
-          const negPts=hg<ag?-1:0;
-          teamPts=Math.round((posPts*mult+hg)*10)/10+negPts;
-        } else {
-          const posPts=ag>hg?5:ag===hg?2:0;
-          const negPts=ag<hg?-1:0;
-          teamPts=Math.round((posPts*mult+ag)*10)/10+negPts;
-        }
+      const teamPts=calcTeamPts(t.name);
         pts+=teamPts;
         teamsPlayed.push({team:t,pts:teamPts,m});
       });
