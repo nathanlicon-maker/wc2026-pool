@@ -274,7 +274,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <div id="standings-table-wrap" style="overflow-x:auto">
     <table class="standings-table">
       <thead><tr>
-        <th>#</th><th></th><th>Team</th><th>Owner</th><th>Grp</th><th>Stage</th>
+        <th>#</th><th></th><th>Team</th><th>FIFA</th><th>Owner</th><th>Grp</th><th>Stage</th>
         <th>W</th><th>D</th><th>L</th><th>GF</th><th>CS</th><th>Bonus</th>
         <th style="text-align:right">Pts</th>
       </tr></thead>
@@ -697,7 +697,7 @@ function renderLeaderboard(){
     const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
     const chips=p.teams.map(t=>{
       const isDH=t.rank>(S.config.dh||20);
-      return `<span class="team-chip ${isDH?'dh':''}">${t.flag} ${t.name} <span class="chip-pts">${calcTeamPts(t.name)}</span></span>`;
+      return `<span class="team-chip ${isDH?'dh':''}">${t.flag} ${t.name} <span style="font-size:10px;color:var(--muted);margin:0 2px">#${t.rank}</span><span class="chip-pts">${calcTeamPts(t.name)}</span></span>`;
     }).join('');
     return `<div class="lb-card ${rc}">
       <div class="lb-rank">${i+1}</div>
@@ -1187,6 +1187,7 @@ function renderStandings(){
       <td style="color:var(--muted);font-weight:600">${i+1}</td>
       <td class="flag-cell">${t.flag}</td>
       <td style="font-weight:600;color:${isMyTeam?'var(--gold)':'var(--white)'}">${t.name} ${isDH?'<span class="dh-badge">×1.5</span>':''}</td>
+      <td style="text-align:center;color:${isDH?'var(--gold)':'var(--muted)'};font-weight:${isDH?'700':'400'};font-size:12px">#${t.rank}</td>
       <td><span class="owner-badge">${t.owner}</span></td>
       <td style="text-align:center;font-weight:600">${t.group}</td>
       <td><span class="stage-badge" style="background:${sc}20;border:1px solid ${sc}50;color:${sc}">${sl}</span></td>
