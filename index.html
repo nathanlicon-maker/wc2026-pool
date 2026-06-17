@@ -574,6 +574,17 @@ let activeGroupFilter='ALL';
 let isSyncing=false;
 
 // ═══════════════════════════════════════════════════════════════════
+// CT time parser - reliably parses stored CT times across all browsers
+function parseCT(dtStr){
+  // dtStr format: "2026-06-17T11:00" (already in CT/CDT)
+  // CDT = UTC-5, so add 5 hours to get UTC
+  const [datePart, timePart] = dtStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, min] = timePart.split(':').map(Number);
+  // Create UTC date (CT + 5hrs = UTC during CDT/summer)
+  return new Date(Date.UTC(year, month-1, day, hour+5, min));
+}
+
 // JSONBIN SYNC — full CORS support, works on all mobile browsers
 // ═══════════════════════════════════════════════════════════════════
 function setSyncStatus(state,msg){
@@ -744,7 +755,7 @@ function renderDailyRecap(){
   const allCompleted=MATCHES.filter(m=>{
     const sc=S.scores[m.id]||{};
     return sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null;
-  }).sort((a,b)=>new Date(b.dt+':00-05:00')-new Date(a.dt+':00-05:00'));
+  }).sort((a,b)=>parseCT(b.dt)-parseCT(a.dt));
 
   if(!allCompleted.length){
     document.getElementById('daily-recap').innerHTML='';
@@ -752,14 +763,14 @@ function renderDailyRecap(){
   }
 
   // Get the most recent match date
-  const lastMatchDate=new Date(allCompleted[0].dt+':00-05:00');
+  const lastMatchDate=parseCT(allCompleted[0].dt);
   const recapDate=lastMatchDate;
   const completed=allCompleted.filter(m=>{
-    const d=new Date(m.dt+':00-05:00');
+    const d=parseCT(m.dt);
     return d.toDateString()===lastMatchDate.toDateString();
   });
 
-  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-10T23:59:00-05:00'))/(1000*60*60*24)));
+  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-11T04:59:00Z'))/(1000*60*60*24)));
 
   // Build WC results
   let resultsHtml='';
@@ -923,13 +934,13 @@ function renderMySchedule(){
     return;
   }
   const myTeamNames=new Set(myTeams.map(t=>t.name));
-  const myMatches=MATCHES.filter(m=>myTeamNames.has(m.home)||myTeamNames.has(m.away)).sort((a,b)=>new Date(a.dt+':00-05:00')-new Date(b.dt+':00-05:00'));
+  const myMatches=MATCHES.filter(m=>myTeamNames.has(m.home)||myTeamNames.has(m.away)).sort((a,b)=>parseCT(a.dt)-parseCT(b.dt));
   if(!myMatches.length){document.getElementById('my-matches-container').innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px">No matches found.</div>';return;}
   const teamSummary=myTeams.map(t=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;background:rgba(212,168,67,0.1);border:1px solid rgba(212,168,67,0.3);font-size:12px;font-weight:600;color:var(--gold)">${t.flag} ${t.name}</span>`).join('');
   let html=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${teamSummary}</div>`;
   const byDay={};
   myMatches.forEach(m=>{
-    const d=new Date(m.dt+':00-05:00');
+    const d=parseCT(m.dt);
     const isToday=d.toDateString()===new Date().toDateString();
     const dayStr=isToday?'Today — '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     if(!byDay[dayStr])byDay[dayStr]=[];
@@ -942,8 +953,8 @@ function renderMySchedule(){
       const hg=sc.hg??'',ag=sc.ag??'';
       const hasH=hg!=='',hasA=ag!=='';
       const status=getMatchStatus(m);
-      const d=new Date(m.dt+':00-05:00');
-      const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const d=parseCT(m.dt);
+      const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago',hour12:true});
       const dot=status==='completed'?'✅':status==='today'?'🔴':'🕐';
       const ht=TEAMS.find(t=>t.name===m.home),at=TEAMS.find(t=>t.name===m.away);
       const homeIsmine=myTeamNames.has(m.home),awayIsmine=myTeamNames.has(m.away);
@@ -969,7 +980,7 @@ function getMatchStatus(m){
   const sc=S.scores[m.id]||{};
   const hasScore=sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null;
   const now=new Date();
-  const matchDate=new Date(m.dt+':00-05:00');
+  const matchDate=parseCT(m.dt);
   const isToday=matchDate.toDateString()===now.toDateString();
   if(hasScore)return 'completed';
   if(isToday)return 'today';
@@ -982,7 +993,7 @@ function renderScores(){
     const order={today:0,past:1,upcoming:2,completed:3};
     const sa=getMatchStatus(a),sb=getMatchStatus(b);
     if(order[sa]!==order[sb])return order[sa]-order[sb];
-    return new Date(a.dt+':00-05:00')-new Date(b.dt+':00-05:00');
+    return parseCT(a.dt)-parseCT(b.dt);
   });
   let filtered=sorted;
   if(scoreView==='today')filtered=sorted.filter(m=>['today','past'].includes(getMatchStatus(m)));
@@ -996,7 +1007,7 @@ function renderScores(){
   }
   const byDay={};
   filtered.forEach(m=>{
-    const d=new Date(m.dt+':00-05:00');
+    const d=parseCT(m.dt);
     const today=new Date();
     const isToday=d.toDateString()===today.toDateString();
     const dayStr=isToday?'Today — '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}):d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
@@ -1011,8 +1022,8 @@ function renderScores(){
       const hg=sc.hg??'',ag=sc.ag??'';
       const hasH=hg!=='',hasA=ag!=='';
       const status=getMatchStatus(m);
-      const d=new Date(m.dt+':00-05:00');
-      const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'});
+      const d=parseCT(m.dt);
+      const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago',hour12:true});
       const dot=status==='completed'?'✅':status==='today'?'🔴':'🕐';
       let winner='';
       if(hasH&&hasA){const hi=+hg,ai=+ag;winner=hi>ai?`🏆 ${m.home} win`:ai>hi?`🏆 ${m.away} win`:'<span class="draw">Draw</span>';}
