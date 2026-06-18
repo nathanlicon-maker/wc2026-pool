@@ -760,7 +760,7 @@ function renderLeaderboard(){
     return `<div class="lb-card ${rc}">
       <div class="lb-rank">${i+1}</div>
       <div>
-        <div class="lb-name">${p.name} <span style="font-size:11px;padding:1px 6px;border-radius:4px;font-family:'Inter',sans-serif;font-weight:600;background:${(S.paid||{})[p.name]?'rgba(90,158,106,0.2)':'rgba(255,75,43,0.1)'};color:${(S.paid||{})[p.name]?'#5a9e6a':'var(--coral)'};border:1px solid ${(S.paid||{})[p.name]?'rgba(90,158,106,0.3)':'rgba(255,75,43,0.3)'}">${(S.paid||{})[p.name]?'✅ Paid':'❌ Owes $'+(S.config.buyin||100)}</span></div>
+        <div class="lb-name">${p.name}</div>
         <div class="lb-teams">${chips||'<span style="font-size:11px;color:var(--muted)">No teams</span>'}</div>
       </div>
       <div>
