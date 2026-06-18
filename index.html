@@ -760,7 +760,7 @@ function renderLeaderboard(){
     return `<div class="lb-card ${rc}">
       <div class="lb-rank">${i+1}</div>
       <div>
-        <div class="lb-name">${p.name}</div>
+        <div class="lb-name">${p.name} <span style="font-size:11px;padding:1px 6px;border-radius:4px;font-family:'Inter',sans-serif;font-weight:600;background:${(S.paid||{})[p.name]?'rgba(90,158,106,0.2)':'rgba(255,75,43,0.1)'};color:${(S.paid||{})[p.name]?'#5a9e6a':'var(--coral)'};border:1px solid ${(S.paid||{})[p.name]?'rgba(90,158,106,0.3)':'rgba(255,75,43,0.3)'}">${(S.paid||{})[p.name]?'✅ Paid':'❌ Owes $'+(S.config.buyin||100)}</span></div>
         <div class="lb-teams">${chips||'<span style="font-size:11px;color:var(--muted)">No teams</span>'}</div>
       </div>
       <div>
@@ -928,181 +928,233 @@ function submitFeedback(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// KNOCKOUT BRACKET — True bracket with connecting lines
+// KNOCKOUT BRACKET — Visual bracket with proper spacing & connectors
 // ═══════════════════════════════════════════════════════════════════
 
 function gv(id){return(S.bracket||{})[id]||'';}
 
-function teamCard(name,isWinner){
-  const t=TEAMS.find(x=>x.name===name);
-  const owner=S.draft[name]||'';
-  const pts=owner?calcTeamPts(name):null;
-  const isDH=t&&t.rank>(S.config.dh||20);
-  if(!name)return `<div class="bt-team bt-tbd">TBD</div>`;
-  return `<div class="bt-team${isWinner?' bt-win':''}">
-    <span class="bt-flag">${t?.flag||'🏳️'}</span>
-    <div class="bt-info">
-      <div class="bt-name">${name}${isDH?' 🌶️':''}</div>
-      ${owner?`<div class="bt-owner">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
-    </div>
-    ${isWinner?'<span class="bt-check">✓</span>':''}
-  </div>`;
-}
-
-function matchCard(id,label,date){
-  const home=gv(id+'_home'),away=gv(id+'_away'),winner=gv(id+'_winner');
-  return `<div class="bt-match" id="bm-${id}">
-    <div class="bt-mlabel">${label}${date?` <span class="bt-date">${date}</span>`:''}</div>
-    ${teamCard(home,winner&&winner===home)}
-    <div class="bt-divider"></div>
-    ${teamCard(away,winner&&winner===away)}
-  </div>`;
-}
-
 function renderBracket(){
   if(!S.bracket)S.bracket={};
   const champion=gv('champion');
-  const IDS={
-    r32L:['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8'],
-    r32R:['r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16'],
-    r16L:['r16_1','r16_2','r16_3','r16_4'],
-    r16R:['r16_5','r16_6','r16_7','r16_8'],
-    qfL:['qf_1','qf_2'],
-    qfR:['qf_3','qf_4'],
-  };
-  const DATES={
-    r32_1:'29 Jun 12pm',r32_2:'29 Jun 3pm',r32_3:'29 Jun 6pm',r32_4:'29 Jun 9pm',
-    r32_5:'30 Jun 12pm',r32_6:'30 Jun 3pm',r32_7:'30 Jun 6pm',r32_8:'30 Jun 9pm',
-    r32_9:'1 Jul 12pm',r32_10:'1 Jul 3pm',r32_11:'1 Jul 6pm',r32_12:'1 Jul 9pm',
-    r32_13:'2 Jul 12pm',r32_14:'2 Jul 3pm',r32_15:'2 Jul 6pm',r32_16:'2 Jul 9pm',
-    r16_1:'3 Jul 2pm',r16_2:'3 Jul 6pm',r16_3:'4 Jul 2pm',r16_4:'4 Jul 6pm',
-    r16_5:'5 Jul 2pm',r16_6:'5 Jul 6pm',r16_7:'6 Jul 2pm',r16_8:'6 Jul 6pm',
-    qf_1:'7 Jul 2pm',qf_2:'7 Jul 6pm',qf_3:'8 Jul 2pm',qf_4:'8 Jul 6pm',
-    sf_1:'11 Jul 2pm',sf_2:'12 Jul 2pm',
-  };
 
-  document.getElementById('bracket-container').innerHTML=`
-  <style>
-    .bracket-outer{display:flex;align-items:flex-start;gap:0;font-size:11px;min-width:1320px}
-    .bt-col{display:flex;flex-direction:column;flex-shrink:0}
-    .bt-col-hdr{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
-      letter-spacing:0.08em;text-align:center;padding:5px 8px;border-radius:4px;margin-bottom:6px}
-    .bt-match{background:var(--card);border:1px solid var(--line);border-radius:7px;
-      overflow:hidden;width:172px;flex-shrink:0;margin-bottom:6px}
-    .bt-mlabel{background:rgba(255,255,255,0.06);padding:3px 7px;font-size:9px;
-      font-weight:700;color:var(--muted);letter-spacing:0.05em;display:flex;
-      justify-content:space-between;align-items:center}
-    .bt-date{color:rgba(255,255,255,0.3);font-weight:400}
-    .bt-team{display:flex;align-items:center;gap:5px;padding:6px 8px;min-height:36px}
-    .bt-tbd{color:var(--muted);font-style:italic;font-size:10px;opacity:0.5}
-    .bt-win{background:rgba(212,168,67,0.1);border-left:3px solid var(--gold)}
-    .bt-flag{font-size:14px;flex-shrink:0}
-    .bt-info{flex:1;min-width:0}
-    .bt-name{font-size:11px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .bt-win .bt-name{color:var(--gold);font-weight:700}
-    .bt-owner{font-size:9px;color:var(--muted)}
-    .bt-check{color:var(--gold);font-size:10px;flex-shrink:0}
-    .bt-divider{height:1px;background:var(--line)}
-  </style>
+  // Match card height + gap constants
+  const MH=86;   // match card height px
+  const GAP=6;   // gap between cards px
+  const UNIT=MH+GAP; // 92px per slot
 
-  <div class="bracket-outer">
-    <!-- LEFT R32 -->
-    <div class="bt-col">
-      <div class="bt-col-hdr" style="color:#5a9e7a;background:#5a9e7a20">ROUND OF 32</div>
-      ${IDS.r32L.map((id,i)=>matchCard(id,'M'+(i+1),DATES[id])).join('')}
-    </div>
-    <!-- connector R32→R16 left -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:26px">
-      ${[0,1,2,3,4,5,6,7].map(i=>`<div style="height:44px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- LEFT R16 -->
-    <div class="bt-col" style="margin-top:44px">
-      <div class="bt-col-hdr" style="color:#5a7a9e;background:#5a7a9e20">ROUND OF 16</div>
-      ${IDS.r16L.map((id,i)=>matchCard(id,'M'+(i+17),DATES[id])).join('')}
-    </div>
-    <!-- connector R16→QF left -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:90px">
-      ${[0,1,2,3].map(i=>`<div style="height:88px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- LEFT QF -->
-    <div class="bt-col" style="margin-top:132px">
-      <div class="bt-col-hdr" style="color:#8a6a9e;background:#8a6a9e20">QUARTER-FINALS</div>
-      ${IDS.qfL.map((id,i)=>matchCard(id,'QF'+(i+1),DATES[id])).join('')}
-    </div>
-    <!-- connector QF→SF left -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:222px">
-      ${[0,1].map(i=>`<div style="height:97px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- LEFT SF -->
-    <div class="bt-col" style="margin-top:270px">
-      <div class="bt-col-hdr" style="color:#9e7a4a;background:#9e7a4a20">SEMI-FINALS</div>
-      ${matchCard('sf_1','SF1',DATES['sf_1'])}
-    </div>
-    <!-- connector SF→Final -->
-    <div style="width:14px;flex-shrink:0;margin-top:358px;height:1px;background:rgba(255,255,255,0.15)"></div>
+  // For each round, matches are vertically centered between their two feeders
+  // R32: 8 matches per side, spaced UNIT apart starting at 0
+  // R16: 4 matches, each centered between pairs → top = UNIT/2 + pair*2*UNIT
+  // QF:  2 matches, centered between R16 pairs
+  // SF:  1 match, centered between QF pair
+  // Final: centered between SF pair
 
-    <!-- CENTER: Final + Champion + 3rd -->
-    <div class="bt-col" style="padding-top:282px;align-items:center;width:196px">
-      <div class="bt-col-hdr" style="color:var(--gold);background:rgba(212,168,67,0.15);width:182px">🏆 FINAL · 19 Jul</div>
-      ${matchCard('final','Final','')}
-      ${champion?`<div style="background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:12px;text-align:center;width:182px;margin-top:8px">
-        <div style="font-size:24px">🏆</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--gold)">${champion}</div>
-        <div style="font-size:9px;color:var(--muted)">WORLD CHAMPION</div>
-        ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:3px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
-      </div>`:`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:8px;text-align:center">Champion TBD</div>`}
-      <div style="margin-top:18px;width:182px">
-        <div class="bt-col-hdr" style="color:#7a7a7a;background:#7a7a7a20">3RD PLACE · 18 Jul</div>
-        ${matchCard('third','3rd Place','')}
+  function matchTop(round, idx){
+    // round: 0=R32, 1=R16, 2=QF, 3=SF
+    const spread = Math.pow(2, round);
+    return idx * spread * UNIT + (spread - 1) * UNIT / 2;
+  }
+
+  function connHeight(round){
+    return Math.pow(2, round-1) * UNIT - MH/2;
+  }
+
+  function teamRow(name, isWinner){
+    const t=TEAMS.find(x=>x.name===name);
+    const owner=S.draft[name]||'';
+    const pts=owner?calcTeamPts(name):null;
+    const isDH=t&&t.rank>(S.config.dh||20);
+    if(!name) return `<div style="padding:6px 8px;min-height:34px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:11px;font-style:italic">TBD</div>`;
+    return `<div style="padding:5px 8px;min-height:34px;display:flex;align-items:center;gap:5px;
+      background:${isWinner?'rgba(212,168,67,0.12)':'transparent'};
+      border-left:${isWinner?'3px solid var(--gold)':'3px solid transparent'}">
+      <span style="font-size:13px">${t?.flag||'🏳️'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:${isWinner?700:500};color:${isWinner?'var(--gold)':'var(--white)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${isDH?' 🌶️':''}</div>
+        ${owner?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
       </div>
-    </div>
+      ${isWinner?'<span style="color:var(--gold);font-size:9px">✓</span>':''}
+    </div>`;
+  }
 
-    <!-- connector Final←SF right -->
-    <div style="width:14px;flex-shrink:0;margin-top:358px;height:1px;background:rgba(255,255,255,0.15)"></div>
-    <!-- RIGHT SF -->
-    <div class="bt-col" style="margin-top:270px">
-      <div class="bt-col-hdr" style="color:#9e7a4a;background:#9e7a4a20">SEMI-FINALS</div>
-      ${matchCard('sf_2','SF2',DATES['sf_2'])}
-    </div>
-    <!-- connector SF←QF right -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:222px">
-      ${[0,1].map(i=>`<div style="height:97px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- RIGHT QF -->
-    <div class="bt-col" style="margin-top:132px">
-      <div class="bt-col-hdr" style="color:#8a6a9e;background:#8a6a9e20">QUARTER-FINALS</div>
-      ${IDS.qfR.map((id,i)=>matchCard(id,'QF'+(i+3),DATES[id])).join('')}
-    </div>
-    <!-- connector QF←R16 right -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:90px">
-      ${[0,1,2,3].map(i=>`<div style="height:88px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- RIGHT R16 -->
-    <div class="bt-col" style="margin-top:44px">
-      <div class="bt-col-hdr" style="color:#5a7a9e;background:#5a7a9e20">ROUND OF 16</div>
-      ${IDS.r16R.map((id,i)=>matchCard(id,'M'+(i+21),DATES[id])).join('')}
-    </div>
-    <!-- connector R16←R32 right -->
-    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:26px">
-      ${[0,1,2,3,4,5,6,7].map(i=>`<div style="height:44px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
-    </div>
-    <!-- RIGHT R32 -->
-    <div class="bt-col">
-      <div class="bt-col-hdr" style="color:#5a9e7a;background:#5a9e7a20">ROUND OF 32</div>
-      ${IDS.r32R.map((id,i)=>matchCard(id,'M'+(i+9),DATES[id])).join('')}
-    </div>
-  </div>
+  function mCard(id, label, date, top, left, width){
+    const home=gv(id+'_home'), away=gv(id+'_away'), winner=gv(id+'_winner');
+    return `<div style="position:absolute;top:${top}px;left:${left}px;width:${width}px;
+      background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;height:${MH}px">
+      <div style="background:rgba(255,255,255,0.07);padding:2px 6px;display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:0.05em">
+        <span>${label}</span><span style="color:rgba(255,255,255,0.25)">${date}</span>
+      </div>
+      ${teamRow(home, winner&&winner===home)}
+      <div style="height:1px;background:var(--line)"></div>
+      ${teamRow(away, winner&&winner===away)}
+    </div>`;
+  }
 
-  <!-- ADMIN FILL-IN PANEL -->
-  <div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+  // Horizontal connector from match right edge to next round
+  function hConn(top, left, width, side='right'){
+    return `<div style="position:absolute;top:${top+MH/2}px;left:${left}px;width:${width}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+  }
+
+  // Vertical connector joining two matches
+  function vConn(topY, botY, x){
+    const h = botY - topY;
+    return `<div style="position:absolute;top:${topY}px;left:${x}px;width:1px;height:${h}px;background:rgba(255,255,255,0.15)"></div>`;
+  }
+
+  // Column widths and positions
+  const CW = 160; // card width
+  const CONN = 20; // connector width
+  const TOTAL_W = 1500;
+  const CENTER = TOTAL_W / 2;
+
+  // Left side column x positions (R32, R16, QF, SF)
+  const L_R32 = 0;
+  const L_R16 = L_R32 + CW + CONN;
+  const L_QF  = L_R16 + CW + CONN;
+  const L_SF  = L_QF  + CW + CONN;
+  const FINAL = CENTER - CW/2;
+  // Right side (mirror)
+  const R_SF  = TOTAL_W - L_SF  - CW;
+  const R_QF  = TOTAL_W - L_QF  - CW;
+  const R_R16 = TOTAL_W - L_R16 - CW;
+  const R_R32 = TOTAL_W - L_R32 - CW;
+
+  const TOTAL_H = 8 * UNIT + 40;
+
+  let html = `<div style="position:relative;width:${TOTAL_W}px;height:${TOTAL_H}px;min-width:${TOTAL_W}px">`;
+
+  // Column headers
+  const hdrStyle = (color) => `position:absolute;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.08em;color:${color};text-align:center;padding:3px 0;top:-28px;`;
+  html += `<div style="${hdrStyle('#5a9e7a')}left:${L_R32}px;width:${CW}px">ROUND OF 32</div>`;
+  html += `<div style="${hdrStyle('#5a7a9e')}left:${L_R16}px;width:${CW}px">ROUND OF 16</div>`;
+  html += `<div style="${hdrStyle('#8a6a9e')}left:${L_QF}px;width:${CW}px">QUARTER-FINALS</div>`;
+  html += `<div style="${hdrStyle('#9e7a4a')}left:${L_SF}px;width:${CW}px">SEMI-FINALS</div>`;
+  html += `<div style="${hdrStyle('var(--gold)')}left:${FINAL}px;width:${CW}px">🏆 FINAL</div>`;
+  html += `<div style="${hdrStyle('#9e7a4a')}left:${R_SF}px;width:${CW}px">SEMI-FINALS</div>`;
+  html += `<div style="${hdrStyle('#8a6a9e')}left:${R_QF}px;width:${CW}px">QUARTER-FINALS</div>`;
+  html += `<div style="${hdrStyle('#5a7a9e')}left:${R_R16}px;width:${CW}px">ROUND OF 16</div>`;
+  html += `<div style="${hdrStyle('#5a9e7a')}left:${R_R32}px;width:${CW}px">ROUND OF 32</div>`;
+
+  // ── LEFT SIDE ──────────────────────────────────────────────────
+  const R32dates=['29 Jun 12p','29 Jun 3p','29 Jun 6p','29 Jun 9p','30 Jun 12p','30 Jun 3p','30 Jun 6p','30 Jun 9p'];
+  const R16datesL=['3 Jul 2p','3 Jul 6p','4 Jul 2p','4 Jul 6p'];
+  const QFdatesL=['7 Jul 2p','7 Jul 6p'];
+
+  for(let i=0;i<8;i++){
+    const top=matchTop(0,i);
+    html+=mCard(`r32_${i+1}`,`M${i+1}`,R32dates[i],top,L_R32,CW);
+    // H connector from R32 to connector line
+    html+=hConn(top, L_R32+CW, CONN);
+  }
+  // V connectors joining pairs for R16
+  for(let i=0;i<4;i++){
+    const t1=matchTop(0,i*2)+MH/2;
+    const t2=matchTop(0,i*2+1)+MH/2;
+    html+=vConn(t1,t2, L_R32+CW+CONN-1);
+    // H connector from midpoint to R16
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${L_R32+CW+CONN-1}px;width:${CONN+1}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    // R16 match
+    html+=mCard(`r16_${i+1}`,`M${i+17}`,R16datesL[i],matchTop(1,i),L_R16,CW);
+    html+=hConn(matchTop(1,i),L_R16+CW,CONN);
+  }
+  // V connectors joining R16 pairs for QF
+  for(let i=0;i<2;i++){
+    const t1=matchTop(1,i*2)+MH/2;
+    const t2=matchTop(1,i*2+1)+MH/2;
+    html+=vConn(t1,t2,L_R16+CW+CONN-1);
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${L_R16+CW+CONN-1}px;width:${CONN+1}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    html+=mCard(`qf_${i+1}`,`QF${i+1}`,QFdatesL[i],matchTop(2,i),L_QF,CW);
+    html+=hConn(matchTop(2,i),L_QF+CW,CONN);
+  }
+  // V connector QF pair → SF
+  {
+    const t1=matchTop(2,0)+MH/2;
+    const t2=matchTop(2,1)+MH/2;
+    html+=vConn(t1,t2,L_QF+CW+CONN-1);
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${L_QF+CW+CONN-1}px;width:${CONN+1}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    html+=mCard('sf_1','SF1','11 Jul 2p',matchTop(3,0),L_SF,CW);
+    // H from SF to Final
+    html+=hConn(matchTop(3,0),L_SF+CW,FINAL-(L_SF+CW));
+  }
+
+  // ── RIGHT SIDE (mirror) ────────────────────────────────────────
+  const R32datesR=['1 Jul 12p','1 Jul 3p','1 Jul 6p','1 Jul 9p','2 Jul 12p','2 Jul 3p','2 Jul 6p','2 Jul 9p'];
+  const R16datesR=['5 Jul 2p','5 Jul 6p','6 Jul 2p','6 Jul 6p'];
+  const QFdatesR=['8 Jul 2p','8 Jul 6p'];
+
+  for(let i=0;i<8;i++){
+    const top=matchTop(0,i);
+    html+=mCard(`r32_${i+9}`,`M${i+9}`,R32datesR[i],top,R_R32,CW);
+    html+=hConn(top,R_R32-CONN,CONN);
+  }
+  for(let i=0;i<4;i++){
+    const t1=matchTop(0,i*2)+MH/2;
+    const t2=matchTop(0,i*2+1)+MH/2;
+    html+=vConn(t1,t2,R_R32-CONN);
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${R_R32-CONN}px;width:${CONN}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    html+=mCard(`r16_${i+5}`,`M${i+21}`,R16datesR[i],matchTop(1,i),R_R16,CW);
+    html+=hConn(matchTop(1,i),R_R16-CONN,CONN);
+  }
+  for(let i=0;i<2;i++){
+    const t1=matchTop(1,i*2)+MH/2;
+    const t2=matchTop(1,i*2+1)+MH/2;
+    html+=vConn(t1,t2,R_R16-CONN);
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${R_R16-CONN}px;width:${CONN}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    html+=mCard(`qf_${i+3}`,`QF${i+3}`,QFdatesR[i],matchTop(2,i),R_QF,CW);
+    html+=hConn(matchTop(2,i),R_QF-CONN,CONN);
+  }
+  {
+    const t1=matchTop(2,0)+MH/2;
+    const t2=matchTop(2,1)+MH/2;
+    html+=vConn(t1,t2,R_QF-CONN);
+    const mid=(t1+t2)/2;
+    html+=`<div style="position:absolute;top:${mid}px;left:${R_QF-CONN}px;width:${CONN}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+    html+=mCard('sf_2','SF2','12 Jul 2p',matchTop(3,0),R_SF,CW);
+    html+=hConn(matchTop(3,0),FINAL+CW,R_SF-(FINAL+CW));
+  }
+
+  // ── FINAL (center) ─────────────────────────────────────────────
+  const finalTop=matchTop(3,0);
+  html+=mCard('final','FINAL','19 Jul 2p',finalTop,FINAL,CW);
+
+  // Champion card
+  const champTop=finalTop+MH+10;
+  html+=`<div style="position:absolute;top:${champTop}px;left:${FINAL}px;width:${CW}px;
+    background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:10px;text-align:center">
+    ${champion?`
+      <div style="font-size:22px">🏆</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold)">${champion}</div>
+      <div style="font-size:9px;color:var(--muted)">WORLD CHAMPION</div>
+      ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:3px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
+    `:`<div style="font-size:11px;color:var(--muted);font-style:italic">Champion TBD</div>`}
+  </div>`;
+
+  // 3rd Place — below champion
+  const thirdTop=champTop+80;
+  html+=`<div style="position:absolute;top:${thirdTop}px;left:${FINAL}px;width:${CW}px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#7a7a7a;text-align:center;margin-bottom:4px;letter-spacing:0.06em">3RD PLACE · 18 Jul</div>
+  </div>`;
+  html+=mCard('third','3rd Place','18 Jul 4p',thirdTop+24,FINAL,CW);
+
+  html+=`</div>`; // end relative container
+
+  // ── ADMIN FILL-IN ──────────────────────────────────────────────
+  const allIds=['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+    'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+    'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+    'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'];
+
+  html+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Fill In Bracket</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Type team names exactly as shown in the draft. Winner field shown in gold. Autocomplete enabled.</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Type team names exactly as shown in the draft. Winner field in gold. Autocomplete enabled.</div>
     <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">
-      ${['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
-         'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
-         'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
-         'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'].map(id=>`
+      ${allIds.map(id=>`
         <div style="background:var(--card2);border-radius:7px;padding:9px">
           <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.04em">${id.replace(/_/g,' ').toUpperCase()}</div>
           <input type="text" id="b_${id}_home" value="${gv(id+'_home')}" placeholder="Home team..." list="team-dl"
@@ -1117,6 +1169,8 @@ function renderBracket(){
       <button class="btn btn-gold" onclick="saveBracket()">💾 Save Bracket</button>
     </div>
   </div>`;
+
+  document.getElementById('bracket-container').innerHTML=html;
 }
 
 function saveBracket(){
@@ -1135,7 +1189,7 @@ function saveBracket(){
   toast('🏆 Bracket saved & synced ✓');
 }
 
-
+function updateTicker(lb){
 
 function bTeam(name, isWinner, align){
   const t=TEAMS.find(x=>x.name===name);
