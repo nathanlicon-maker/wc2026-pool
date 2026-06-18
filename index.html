@@ -218,6 +218,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <button class="tab-btn" data-tab="draft"       onclick="showTab('draft',this)">🌍 Draft</button>
   <button class="tab-btn" data-tab="rules"       onclick="showTab('rules',this)">📖 Rules</button>
   <button class="tab-btn" data-tab="admin"       onclick="showTab('admin',this)">⚙️ Setup</button>
+  <button class="tab-btn" data-tab="feedback"    onclick="showTab('feedback',this)">💬 Feedback</button>
 </div>
 
 <!-- LEADERBOARD -->
@@ -358,6 +359,25 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
       <div class="rule-row"><span>1st</span><span class="rv" style="font-size:13px">Goals scored</span></div>
       <div class="rule-row"><span>2nd</span><span class="rv" style="font-size:13px">Furthest team</span></div>
       <div class="rule-row"><span>3rd</span><span class="rv" style="font-size:13px">Coin flip 🪙</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK -->
+<div id="pane-feedback" class="pane">
+  <div class="section-title">💬 Feedback <small>we value your input</small></div>
+  <div style="max-width:500px">
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Your Name</label>
+      <input id="feedback-name" type="text" placeholder="Enter your name..." style="width:100%;background:var(--card2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:var(--white);font-family:'Inter',sans-serif;font-size:14px;padding:8px 10px;outline:none;margin-bottom:14px">
+      <label style="display:block;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Your Feedback</label>
+      <textarea id="feedback-text" placeholder="Share your thoughts, complaints, suggestions..." style="width:100%;background:var(--card2);border:1px solid rgba(255,255,255,0.12);border-radius:6px;color:var(--white);font-family:'Inter',sans-serif;font-size:14px;padding:8px 10px;outline:none;min-height:120px;resize:vertical"></textarea>
+    </div>
+    <button onclick="submitFeedback()" class="btn btn-gold" style="width:100%;font-size:16px;padding:12px">📤 Submit Feedback</button>
+    <div id="feedback-response" style="display:none;margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">🗑️</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--gold)">Go Fuck Yourself.</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px">Thank you for your contribution to nothing.</div>
     </div>
   </div>
 </div>
@@ -879,6 +899,22 @@ function renderDailyRecap(){
         </div>
       </div>
     </div>`;
+}
+
+function submitFeedback(){
+  const name=document.getElementById('feedback-name').value.trim();
+  const text=document.getElementById('feedback-text').value.trim();
+  if(!name||!text){toast('Please fill in both fields first.');return;}
+  document.getElementById('feedback-response').style.display='block';
+  document.getElementById('feedback-name').value='';
+  document.getElementById('feedback-text').value='';
+  document.getElementById('feedback-name').disabled=true;
+  document.getElementById('feedback-text').disabled=true;
+  setTimeout(()=>{
+    document.getElementById('feedback-response').style.display='none';
+    document.getElementById('feedback-name').disabled=false;
+    document.getElementById('feedback-text').disabled=false;
+  },5000);
 }
 
 function updateTicker(lb){
@@ -1746,6 +1782,7 @@ function showTab(name,btn){
   if(name==='standings'){renderStandings();}
   if(name==='draft')renderDraft();
   if(name==='admin')renderAdmin();
+  if(name==='feedback'){}
   if(name==='power')renderPowerRankings();
 }
 function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();renderMySchedule();}
