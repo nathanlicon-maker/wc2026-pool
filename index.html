@@ -750,7 +750,7 @@ function renderLeaderboard(){
     document.getElementById('leaderboard-list').innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Go to Draft tab to assign teams to players first.</div>';
     updateTicker(lb);return;
   }
-  const prizes=[pool*.55,pool*.25,pool*.12];
+  const prizes=[pool*.65,pool*.25,pool*.10];
   document.getElementById('leaderboard-list').innerHTML=lb.map((p,i)=>{
     const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
     const chips=p.teams.map(t=>{
