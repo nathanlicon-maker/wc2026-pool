@@ -928,13 +928,214 @@ function submitFeedback(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// KNOCKOUT BRACKET — Mirrored layout (left side + right side meet in middle)
+// KNOCKOUT BRACKET — True bracket with connecting lines
 // ═══════════════════════════════════════════════════════════════════
 
-// Left side: matches 1-8 (R32) → 1-4 (R16) → 1-2 (QF) → SF1 → Final
-// Right side: matches 9-16 (R32) → 5-8 (R16) → 3-4 (QF) → SF2 → Final (mirrored)
+function gv(id){return(S.bracket||{})[id]||'';}
 
-function getBracketVal(id){ return (S.bracket||{})[id]||''; }
+function teamCard(name,isWinner){
+  const t=TEAMS.find(x=>x.name===name);
+  const owner=S.draft[name]||'';
+  const pts=owner?calcTeamPts(name):null;
+  const isDH=t&&t.rank>(S.config.dh||20);
+  if(!name)return `<div class="bt-team bt-tbd">TBD</div>`;
+  return `<div class="bt-team${isWinner?' bt-win':''}">
+    <span class="bt-flag">${t?.flag||'🏳️'}</span>
+    <div class="bt-info">
+      <div class="bt-name">${name}${isDH?' 🌶️':''}</div>
+      ${owner?`<div class="bt-owner">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
+    </div>
+    ${isWinner?'<span class="bt-check">✓</span>':''}
+  </div>`;
+}
+
+function matchCard(id,label,date){
+  const home=gv(id+'_home'),away=gv(id+'_away'),winner=gv(id+'_winner');
+  return `<div class="bt-match" id="bm-${id}">
+    <div class="bt-mlabel">${label}${date?` <span class="bt-date">${date}</span>`:''}</div>
+    ${teamCard(home,winner&&winner===home)}
+    <div class="bt-divider"></div>
+    ${teamCard(away,winner&&winner===away)}
+  </div>`;
+}
+
+function renderBracket(){
+  if(!S.bracket)S.bracket={};
+  const champion=gv('champion');
+  const IDS={
+    r32L:['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8'],
+    r32R:['r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16'],
+    r16L:['r16_1','r16_2','r16_3','r16_4'],
+    r16R:['r16_5','r16_6','r16_7','r16_8'],
+    qfL:['qf_1','qf_2'],
+    qfR:['qf_3','qf_4'],
+  };
+  const DATES={
+    r32_1:'29 Jun 12pm',r32_2:'29 Jun 3pm',r32_3:'29 Jun 6pm',r32_4:'29 Jun 9pm',
+    r32_5:'30 Jun 12pm',r32_6:'30 Jun 3pm',r32_7:'30 Jun 6pm',r32_8:'30 Jun 9pm',
+    r32_9:'1 Jul 12pm',r32_10:'1 Jul 3pm',r32_11:'1 Jul 6pm',r32_12:'1 Jul 9pm',
+    r32_13:'2 Jul 12pm',r32_14:'2 Jul 3pm',r32_15:'2 Jul 6pm',r32_16:'2 Jul 9pm',
+    r16_1:'3 Jul 2pm',r16_2:'3 Jul 6pm',r16_3:'4 Jul 2pm',r16_4:'4 Jul 6pm',
+    r16_5:'5 Jul 2pm',r16_6:'5 Jul 6pm',r16_7:'6 Jul 2pm',r16_8:'6 Jul 6pm',
+    qf_1:'7 Jul 2pm',qf_2:'7 Jul 6pm',qf_3:'8 Jul 2pm',qf_4:'8 Jul 6pm',
+    sf_1:'11 Jul 2pm',sf_2:'12 Jul 2pm',
+  };
+
+  document.getElementById('bracket-container').innerHTML=`
+  <style>
+    .bracket-outer{display:flex;align-items:flex-start;gap:0;font-size:11px;min-width:1320px}
+    .bt-col{display:flex;flex-direction:column;flex-shrink:0}
+    .bt-col-hdr{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
+      letter-spacing:0.08em;text-align:center;padding:5px 8px;border-radius:4px;margin-bottom:6px}
+    .bt-match{background:var(--card);border:1px solid var(--line);border-radius:7px;
+      overflow:hidden;width:172px;flex-shrink:0;margin-bottom:6px}
+    .bt-mlabel{background:rgba(255,255,255,0.06);padding:3px 7px;font-size:9px;
+      font-weight:700;color:var(--muted);letter-spacing:0.05em;display:flex;
+      justify-content:space-between;align-items:center}
+    .bt-date{color:rgba(255,255,255,0.3);font-weight:400}
+    .bt-team{display:flex;align-items:center;gap:5px;padding:6px 8px;min-height:36px}
+    .bt-tbd{color:var(--muted);font-style:italic;font-size:10px;opacity:0.5}
+    .bt-win{background:rgba(212,168,67,0.1);border-left:3px solid var(--gold)}
+    .bt-flag{font-size:14px;flex-shrink:0}
+    .bt-info{flex:1;min-width:0}
+    .bt-name{font-size:11px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bt-win .bt-name{color:var(--gold);font-weight:700}
+    .bt-owner{font-size:9px;color:var(--muted)}
+    .bt-check{color:var(--gold);font-size:10px;flex-shrink:0}
+    .bt-divider{height:1px;background:var(--line)}
+  </style>
+
+  <div class="bracket-outer">
+    <!-- LEFT R32 -->
+    <div class="bt-col">
+      <div class="bt-col-hdr" style="color:#5a9e7a;background:#5a9e7a20">ROUND OF 32</div>
+      ${IDS.r32L.map((id,i)=>matchCard(id,'M'+(i+1),DATES[id])).join('')}
+    </div>
+    <!-- connector R32→R16 left -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:26px">
+      ${[0,1,2,3,4,5,6,7].map(i=>`<div style="height:44px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- LEFT R16 -->
+    <div class="bt-col" style="margin-top:44px">
+      <div class="bt-col-hdr" style="color:#5a7a9e;background:#5a7a9e20">ROUND OF 16</div>
+      ${IDS.r16L.map((id,i)=>matchCard(id,'M'+(i+17),DATES[id])).join('')}
+    </div>
+    <!-- connector R16→QF left -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:90px">
+      ${[0,1,2,3].map(i=>`<div style="height:88px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- LEFT QF -->
+    <div class="bt-col" style="margin-top:132px">
+      <div class="bt-col-hdr" style="color:#8a6a9e;background:#8a6a9e20">QUARTER-FINALS</div>
+      ${IDS.qfL.map((id,i)=>matchCard(id,'QF'+(i+1),DATES[id])).join('')}
+    </div>
+    <!-- connector QF→SF left -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:222px">
+      ${[0,1].map(i=>`<div style="height:97px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-right:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- LEFT SF -->
+    <div class="bt-col" style="margin-top:270px">
+      <div class="bt-col-hdr" style="color:#9e7a4a;background:#9e7a4a20">SEMI-FINALS</div>
+      ${matchCard('sf_1','SF1',DATES['sf_1'])}
+    </div>
+    <!-- connector SF→Final -->
+    <div style="width:14px;flex-shrink:0;margin-top:358px;height:1px;background:rgba(255,255,255,0.15)"></div>
+
+    <!-- CENTER: Final + Champion + 3rd -->
+    <div class="bt-col" style="padding-top:282px;align-items:center;width:196px">
+      <div class="bt-col-hdr" style="color:var(--gold);background:rgba(212,168,67,0.15);width:182px">🏆 FINAL · 19 Jul</div>
+      ${matchCard('final','Final','')}
+      ${champion?`<div style="background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:12px;text-align:center;width:182px;margin-top:8px">
+        <div style="font-size:24px">🏆</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--gold)">${champion}</div>
+        <div style="font-size:9px;color:var(--muted)">WORLD CHAMPION</div>
+        ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:3px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
+      </div>`:`<div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:8px;text-align:center">Champion TBD</div>`}
+      <div style="margin-top:18px;width:182px">
+        <div class="bt-col-hdr" style="color:#7a7a7a;background:#7a7a7a20">3RD PLACE · 18 Jul</div>
+        ${matchCard('third','3rd Place','')}
+      </div>
+    </div>
+
+    <!-- connector Final←SF right -->
+    <div style="width:14px;flex-shrink:0;margin-top:358px;height:1px;background:rgba(255,255,255,0.15)"></div>
+    <!-- RIGHT SF -->
+    <div class="bt-col" style="margin-top:270px">
+      <div class="bt-col-hdr" style="color:#9e7a4a;background:#9e7a4a20">SEMI-FINALS</div>
+      ${matchCard('sf_2','SF2',DATES['sf_2'])}
+    </div>
+    <!-- connector SF←QF right -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:222px">
+      ${[0,1].map(i=>`<div style="height:97px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- RIGHT QF -->
+    <div class="bt-col" style="margin-top:132px">
+      <div class="bt-col-hdr" style="color:#8a6a9e;background:#8a6a9e20">QUARTER-FINALS</div>
+      ${IDS.qfR.map((id,i)=>matchCard(id,'QF'+(i+3),DATES[id])).join('')}
+    </div>
+    <!-- connector QF←R16 right -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:90px">
+      ${[0,1,2,3].map(i=>`<div style="height:88px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- RIGHT R16 -->
+    <div class="bt-col" style="margin-top:44px">
+      <div class="bt-col-hdr" style="color:#5a7a9e;background:#5a7a9e20">ROUND OF 16</div>
+      ${IDS.r16R.map((id,i)=>matchCard(id,'M'+(i+21),DATES[id])).join('')}
+    </div>
+    <!-- connector R16←R32 right -->
+    <div style="display:flex;flex-direction:column;width:14px;flex-shrink:0;margin-top:26px">
+      ${[0,1,2,3,4,5,6,7].map(i=>`<div style="height:44px;display:flex;align-items:${i%2===0?'flex-end':'flex-start'}"><div style="width:14px;height:50%;border-left:1px solid rgba(255,255,255,0.15);border-${i%2===0?'bottom':'top'}:1px solid rgba(255,255,255,0.15)"></div></div>`).join('')}
+    </div>
+    <!-- RIGHT R32 -->
+    <div class="bt-col">
+      <div class="bt-col-hdr" style="color:#5a9e7a;background:#5a9e7a20">ROUND OF 32</div>
+      ${IDS.r32R.map((id,i)=>matchCard(id,'M'+(i+9),DATES[id])).join('')}
+    </div>
+  </div>
+
+  <!-- ADMIN FILL-IN PANEL -->
+  <div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Fill In Bracket</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Type team names exactly as shown in the draft. Winner field shown in gold. Autocomplete enabled.</div>
+    <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px">
+      ${['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+         'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+         'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+         'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'].map(id=>`
+        <div style="background:var(--card2);border-radius:7px;padding:9px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.04em">${id.replace(/_/g,' ').toUpperCase()}</div>
+          <input type="text" id="b_${id}_home" value="${gv(id+'_home')}" placeholder="Home team..." list="team-dl"
+            style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px;box-sizing:border-box">
+          <input type="text" id="b_${id}_away" value="${gv(id+'_away')}" placeholder="Away team..." list="team-dl"
+            style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px;box-sizing:border-box">
+          <input type="text" id="b_${id}_winner" value="${gv(id+'_winner')}" placeholder="Winner..." list="team-dl"
+            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;color:var(--gold);font-size:11px;padding:4px 6px;outline:none;box-sizing:border-box">
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-gold" onclick="saveBracket()">💾 Save Bracket</button>
+    </div>
+  </div>`;
+}
+
+function saveBracket(){
+  if(!S.bracket)S.bracket={};
+  ['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+   'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+   'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+   'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'].forEach(id=>{
+    S.bracket[id+'_home']=document.getElementById(`b_${id}_home`)?.value.trim()||'';
+    S.bracket[id+'_away']=document.getElementById(`b_${id}_away`)?.value.trim()||'';
+    S.bracket[id+'_winner']=document.getElementById(`b_${id}_winner`)?.value.trim()||'';
+  });
+  S.bracket.champion=S.bracket['final_winner']||'';
+  saveLocal();syncWrite();
+  renderBracket();
+  toast('🏆 Bracket saved & synced ✓');
+}
+
+
 
 function bTeam(name, isWinner, align){
   const t=TEAMS.find(x=>x.name===name);
