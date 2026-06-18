@@ -213,12 +213,12 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="leaderboard" onclick="showTab('leaderboard',this)">🏅 Leaderboard</button>
   <button class="tab-btn" data-tab="scores"      onclick="showTab('scores',this)">📊 Scores</button>
+  <button class="tab-btn" data-tab="bracket"     onclick="showTab('bracket',this)">🏆 Bracket</button>
   <button class="tab-btn" data-tab="power"       onclick="showTab('power',this)">⚡ Power Rankings</button>
   <button class="tab-btn" data-tab="standings"   onclick="showTab('standings',this)">📋 Teams</button>
   <button class="tab-btn" data-tab="draft"       onclick="showTab('draft',this)">🌍 Draft</button>
   <button class="tab-btn" data-tab="rules"       onclick="showTab('rules',this)">📖 Rules</button>
   <button class="tab-btn" data-tab="admin"       onclick="showTab('admin',this)">⚙️ Setup</button>
-  <button class="tab-btn" data-tab="bracket"     onclick="showTab('bracket',this)">🏆 Bracket</button>
   <button class="tab-btn" data-tab="feedback"    onclick="showTab('feedback',this)">💬 Feedback</button>
 </div>
 
@@ -386,10 +386,10 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <!-- BRACKET -->
 <div id="pane-bracket" class="pane">
   <div class="section-title">🏆 Knockout Bracket <small>R32 → R16 → QF → SF → Final</small></div>
-  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:11px 15px;margin-bottom:16px;font-size:12px;color:var(--muted)">
-    Teams populate as you fill in the bracket below. Group stage ends June 27 — bracket starts June 29.
+  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted)">
+    Group stage ends June 27. Fill in teams below as they qualify. Bracket syncs to everyone instantly.
   </div>
-  <div id="bracket-container" style="overflow-x:auto;padding-bottom:16px"></div>
+  <div id="bracket-container" style="overflow-x:auto;padding-bottom:20px"></div>
 </div>
 
 <!-- ADMIN -->
@@ -928,143 +928,208 @@ function submitFeedback(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// KNOCKOUT BRACKET
+// KNOCKOUT BRACKET — Mirrored layout (left side + right side meet in middle)
 // ═══════════════════════════════════════════════════════════════════
-const BRACKET_SLOTS={
-  r32:[
-    {id:'r32_1',label:'Match 1'},{id:'r32_2',label:'Match 2'},
-    {id:'r32_3',label:'Match 3'},{id:'r32_4',label:'Match 4'},
-    {id:'r32_5',label:'Match 5'},{id:'r32_6',label:'Match 6'},
-    {id:'r32_7',label:'Match 7'},{id:'r32_8',label:'Match 8'},
-    {id:'r32_9',label:'Match 9'},{id:'r32_10',label:'Match 10'},
-    {id:'r32_11',label:'Match 11'},{id:'r32_12',label:'Match 12'},
-    {id:'r32_13',label:'Match 13'},{id:'r32_14',label:'Match 14'},
-    {id:'r32_15',label:'Match 15'},{id:'r32_16',label:'Match 16'},
-  ],
-  r16:[
-    {id:'r16_1',label:'R16 Match 1'},{id:'r16_2',label:'R16 Match 2'},
-    {id:'r16_3',label:'R16 Match 3'},{id:'r16_4',label:'R16 Match 4'},
-    {id:'r16_5',label:'R16 Match 5'},{id:'r16_6',label:'R16 Match 6'},
-    {id:'r16_7',label:'R16 Match 7'},{id:'r16_8',label:'R16 Match 8'},
-  ],
-  qf:[
-    {id:'qf_1',label:'QF 1'},{id:'qf_2',label:'QF 2'},
-    {id:'qf_3',label:'QF 3'},{id:'qf_4',label:'QF 4'},
-  ],
-  sf:[
-    {id:'sf_1',label:'Semi-Final 1'},{id:'sf_2',label:'Semi-Final 2'},
-  ],
-  final:[{id:'final',label:'FINAL'}],
-  third:[{id:'third',label:'3rd Place'}]
-};
 
-function bracketTeamCard(name,isWinner){
-  if(!name){
-    return `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:rgba(255,255,255,0.02);border-radius:5px;min-width:170px">
-      <span style="font-size:12px;color:var(--muted);font-style:italic;opacity:0.5">TBD</span>
-    </div>`;
-  }
+// Left side: matches 1-8 (R32) → 1-4 (R16) → 1-2 (QF) → SF1 → Final
+// Right side: matches 9-16 (R32) → 5-8 (R16) → 3-4 (QF) → SF2 → Final (mirrored)
+
+function getBracketVal(id){ return (S.bracket||{})[id]||''; }
+
+function bTeam(name, isWinner, align){
   const t=TEAMS.find(x=>x.name===name);
   const owner=S.draft[name]||'';
   const pts=owner?calcTeamPts(name):null;
   const isDH=t&&t.rank>(S.config.dh||20);
-  return `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:${isWinner?'rgba(212,168,67,0.12)':'rgba(255,255,255,0.04)'};border-radius:5px;min-width:170px;border:1px solid ${isWinner?'rgba(212,168,67,0.4)':'transparent'}">
-    <span style="font-size:16px">${t?.flag||'🏳️'}</span>
-    <div style="flex:1;min-width:0">
-      <div style="font-weight:${isWinner?'700':'500'};font-size:12px;color:${isWinner?'var(--gold)':'var(--white)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${isDH?' 🌶️':''}</div>
-      ${owner?`<div style="font-size:10px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'pts':''}</div>`:''}
+  const empty=!name;
+  return `<div style="display:flex;align-items:center;gap:5px;padding:6px 8px;
+    background:${isWinner?'rgba(212,168,67,0.12)':empty?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.04)'};
+    border-left:${isWinner?'3px solid var(--gold)':'3px solid transparent'};
+    min-height:38px">
+    ${!empty?`<span style="font-size:14px;flex-shrink:0">${t?.flag||'🏳️'}</span>`:''}
+    <div style="flex:1;min-width:0;${align==='right'?'text-align:right':''}">
+      <div style="font-size:11px;font-weight:${isWinner?700:500};color:${isWinner?'var(--gold)':empty?'var(--muted)':'var(--white)'};
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        ${empty?'TBD':name}${isDH&&!empty?' 🌶️':''}
+      </div>
+      ${owner&&!empty?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
     </div>
-    ${isWinner?'<span style="color:var(--gold);font-size:12px">✓</span>':''}
+    ${isWinner?'<span style="color:var(--gold);font-size:10px;flex-shrink:0">✓</span>':''}
   </div>`;
 }
 
-function bracketMatch(slot,stageColor){
-  const b=S.bracket||{};
-  const home=b[slot.id+'_home']||'';
-  const away=b[slot.id+'_away']||'';
-  const winner=b[slot.id+'_winner']||'';
-  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:6px;overflow:hidden">
-    <div style="background:${stageColor};padding:3px 8px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--pitch)">${slot.label}</div>
-    ${bracketTeamCard(home,winner&&winner===home)}
-    <div style="height:1px;background:var(--line);margin:0 8px"></div>
-    ${bracketTeamCard(away,winner&&winner===away)}
+function bMatch(matchId, label, stageColor, align){
+  const home=getBracketVal(matchId+'_home');
+  const away=getBracketVal(matchId+'_away');
+  const winner=getBracketVal(matchId+'_winner');
+  const date=getBracketVal(matchId+'_date');
+  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:185px;flex-shrink:0">
+    <div style="background:${stageColor};padding:2px 7px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:#000;letter-spacing:0.06em">${label}</span>
+      ${date?`<span style="font-size:9px;color:rgba(0,0,0,0.6)">${date}</span>`:''}
+    </div>
+    ${bTeam(home,winner&&winner===home,align)}
+    <div style="height:1px;background:var(--line)"></div>
+    ${bTeam(away,winner&&winner===away,align)}
+  </div>`;
+}
+
+function bConnector(height){
+  return `<div style="width:16px;flex-shrink:0;align-self:stretch;display:flex;align-items:center">
+    <div style="width:100%;height:1px;background:rgba(255,255,255,0.12)"></div>
+  </div>`;
+}
+
+function bColumn(title, color, matches){
+  return `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
+      color:${color};text-align:center;padding:4px 6px;background:${color}20;border-radius:4px;
+      letter-spacing:0.08em;margin-bottom:4px">${title}</div>
+    ${matches.join('')}
   </div>`;
 }
 
 function renderBracket(){
   if(!S.bracket)S.bracket={};
-  const sc={r32:'#4a7f6a',r16:'#3a6a9a',qf:'#7a5a9a',sf:'#9a6a3a',final:'#C9A84C',third:'#6a6a6a'};
-  const champion=S.bracket?.champion||'';
+  const C={r32:'#5a9e7a',r16:'#5a7a9e',qf:'#8a6a9e',sf:'#9e7a4a',final:'#C9A84C',third:'#7a7a7a'};
+  const champion=getBracketVal('champion');
 
-  let html=`<div style="display:flex;gap:12px;align-items:flex-start;min-width:1200px">`;
+  // ── LEFT SIDE ─────────────────────────────────────────────────
+  const r32Left=[
+    bMatch('r32_1','M1 · 29 Jun',C.r32),bMatch('r32_2','M2 · 29 Jun',C.r32),
+    bMatch('r32_3','M3 · 29 Jun',C.r32),bMatch('r32_4','M4 · 29 Jun',C.r32),
+    bMatch('r32_5','M5 · 30 Jun',C.r32),bMatch('r32_6','M6 · 30 Jun',C.r32),
+    bMatch('r32_7','M7 · 30 Jun',C.r32),bMatch('r32_8','M8 · 30 Jun',C.r32),
+  ];
+  const r16Left=[
+    bMatch('r16_1','M17 · 3 Jul',C.r16),bMatch('r16_2','M18 · 3 Jul',C.r16),
+    bMatch('r16_3','M19 · 4 Jul',C.r16),bMatch('r16_4','M20 · 4 Jul',C.r16),
+  ];
+  const qfLeft=[
+    bMatch('qf_1','QF1 · 7 Jul',C.qf),bMatch('qf_2','QF2 · 7 Jul',C.qf),
+  ];
+  const sfLeft=[bMatch('sf_1','SF1 · 11 Jul',C.sf)];
 
-  // R32 — split into 2 cols of 8
-  html+=`<div style="flex-shrink:0;width:220px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.r32};text-align:center;margin-bottom:8px;padding:4px;background:${sc.r32}20;border-radius:4px;letter-spacing:0.08em">ROUND OF 32</div>
-    ${BRACKET_SLOTS.r32.slice(0,16).map(s=>bracketMatch(s,sc.r32)).join('')}
-  </div>`;
+  // ── RIGHT SIDE ────────────────────────────────────────────────
+  const r32Right=[
+    bMatch('r32_9','M9 · 1 Jul',C.r32),bMatch('r32_10','M10 · 1 Jul',C.r32),
+    bMatch('r32_11','M11 · 2 Jul',C.r32),bMatch('r32_12','M12 · 2 Jul',C.r32),
+    bMatch('r32_13','M13 · 2 Jul',C.r32),bMatch('r32_14','M14 · 2 Jul',C.r32),
+    bMatch('r32_15','M15 · 3 Jul',C.r32),bMatch('r32_16','M16 · 3 Jul',C.r32),
+  ];
+  const r16Right=[
+    bMatch('r16_5','M21 · 5 Jul',C.r16),bMatch('r16_6','M22 · 5 Jul',C.r16),
+    bMatch('r16_7','M23 · 6 Jul',C.r16),bMatch('r16_8','M24 · 6 Jul',C.r16),
+  ];
+  const qfRight=[
+    bMatch('qf_3','QF3 · 8 Jul',C.qf),bMatch('qf_4','QF4 · 8 Jul',C.qf),
+  ];
+  const sfRight=[bMatch('sf_2','SF2 · 12 Jul',C.sf)];
 
-  html+=`<div style="display:flex;align-items:center;color:var(--muted);font-size:18px;padding-top:30px;flex-shrink:0">›</div>`;
+  // ── FINAL + 3RD ───────────────────────────────────────────────
+  const finalMatch=bMatch('final','FINAL · 19 Jul',C.final);
+  const thirdMatch=bMatch('third','3rd · 18 Jul',C.third);
 
-  // R16
-  html+=`<div style="flex-shrink:0;width:210px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.r16};text-align:center;margin-bottom:8px;padding:4px;background:${sc.r16}20;border-radius:4px;letter-spacing:0.08em">ROUND OF 16</div>
-    ${BRACKET_SLOTS.r16.map(s=>bracketMatch(s,sc.r16)).join('')}
-  </div>`;
+  // ── CHAMPION CARD ─────────────────────────────────────────────
+  const championCard=champion?`
+    <div style="margin-top:10px;background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:12px;text-align:center;width:185px">
+      <div style="font-size:26px">🏆</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--gold)">${champion}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:2px">WORLD CHAMPION</div>
+      ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:4px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
+    </div>`:`<div style="width:185px;text-align:center;margin-top:10px;font-size:11px;color:var(--muted);font-style:italic">Champion TBD</div>`;
 
-  html+=`<div style="display:flex;align-items:center;color:var(--muted);font-size:18px;padding-top:30px;flex-shrink:0">›</div>`;
-
-  // QF
-  html+=`<div style="flex-shrink:0;width:210px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.qf};text-align:center;margin-bottom:8px;padding:4px;background:${sc.qf}20;border-radius:4px;letter-spacing:0.08em">QUARTER-FINALS</div>
-    ${BRACKET_SLOTS.qf.map(s=>bracketMatch(s,sc.qf)).join('')}
-  </div>`;
-
-  html+=`<div style="display:flex;align-items:center;color:var(--muted);font-size:18px;padding-top:30px;flex-shrink:0">›</div>`;
-
-  // SF + 3rd
-  html+=`<div style="flex-shrink:0;width:210px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.sf};text-align:center;margin-bottom:8px;padding:4px;background:${sc.sf}20;border-radius:4px;letter-spacing:0.08em">SEMI-FINALS</div>
-    ${BRACKET_SLOTS.sf.map(s=>bracketMatch(s,sc.sf)).join('')}
-    <div style="margin-top:16px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.third};text-align:center;margin-bottom:8px;padding:4px;background:${sc.third}20;border-radius:4px;letter-spacing:0.08em">3RD PLACE</div>
-      ${BRACKET_SLOTS.third.map(s=>bracketMatch(s,sc.third)).join('')}
+  // ── FULL BRACKET HTML ─────────────────────────────────────────
+  const html=`
+  <style>
+    .bracket-wrap{display:flex;align-items:flex-start;gap:0;min-width:1400px}
+    .bcol{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+    .bcol-header{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;
+      text-align:center;padding:4px 6px;border-radius:4px;letter-spacing:0.08em;margin-bottom:4px}
+    .bconn{width:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+      align-self:stretch}
+  </style>
+  <div class="bracket-wrap">
+    <!-- LEFT: R32 -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.r32};background:${C.r32}20">ROUND OF 32</div>
+      ${r32Left.join('')}
     </div>
-  </div>`;
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- LEFT: R16 -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.r16};background:${C.r16}20">ROUND OF 16</div>
+      ${r16Left.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- LEFT: QF -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.qf};background:${C.qf}20">QUARTER-FINALS</div>
+      ${qfLeft.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- LEFT: SF -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.sf};background:${C.sf}20">SEMI-FINALS</div>
+      ${sfLeft.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- FINAL + 3RD -->
+    <div class="bcol" style="align-items:center">
+      <div class="bcol-header" style="color:${C.final};background:${C.final}20;width:185px">🏆 FINAL</div>
+      ${finalMatch}
+      ${championCard}
+      <div style="margin-top:16px;width:185px">
+        <div class="bcol-header" style="color:${C.third};background:${C.third}20">3RD PLACE</div>
+        ${thirdMatch}
+      </div>
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- RIGHT: SF -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.sf};background:${C.sf}20">SEMI-FINALS</div>
+      ${sfRight.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- RIGHT: QF -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.qf};background:${C.qf}20">QUARTER-FINALS</div>
+      ${qfRight.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- RIGHT: R16 -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.r16};background:${C.r16}20">ROUND OF 16</div>
+      ${r16Right.join('')}
+    </div>
+    <div class="bconn"><div style="width:100%;height:1px;background:rgba(255,255,255,0.1)"></div></div>
+    <!-- RIGHT: R32 -->
+    <div class="bcol">
+      <div class="bcol-header" style="color:${C.r32};background:${C.r32}20">ROUND OF 32</div>
+      ${r32Right.join('')}
+    </div>
+  </div>
 
-  html+=`<div style="display:flex;align-items:center;color:var(--muted);font-size:18px;padding-top:30px;flex-shrink:0">›</div>`;
-
-  // Final + Champion
-  html+=`<div style="flex-shrink:0;width:210px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;color:${sc.final};text-align:center;margin-bottom:8px;padding:4px;background:${sc.final}20;border-radius:4px;letter-spacing:0.08em">🏆 FINAL</div>
-    ${BRACKET_SLOTS.final.map(s=>bracketMatch(s,sc.final)).join('')}
-    ${champion?`<div style="margin-top:12px;background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:14px;text-align:center">
-      <div style="font-size:28px">🏆</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--gold)">${champion}</div>
-      <div style="font-size:10px;color:var(--muted);margin-top:2px">WORLD CHAMPION</div>
-      ${S.draft[champion]?`<div style="font-size:11px;color:#5a9e6a;margin-top:4px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
-    </div>`:'<div style="margin-top:12px;text-align:center;font-size:11px;color:var(--muted);font-style:italic">Champion TBD</div>'}
-  </div>`;
-
-  html+='</div>';
-
-  // Admin fill-in panel
-  const allSlots=[...BRACKET_SLOTS.r32,...BRACKET_SLOTS.r16,...BRACKET_SLOTS.qf,...BRACKET_SLOTS.sf,...BRACKET_SLOTS.final,...BRACKET_SLOTS.third];
-  html+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+  <!-- ADMIN FILL-IN -->
+  <div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Fill In Bracket</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Enter team names exactly as shown in the draft. Type winner in the gold field.</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px" id="bracket-admin-slots">
-      ${allSlots.map(slot=>{
-        const b=S.bracket||{};
-        return `<div style="background:var(--card2);border-radius:7px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.04em">${slot.label}</div>
-          <input type="text" id="b_${slot.id}_home" value="${b[slot.id+'_home']||''}" placeholder="Home team..." list="team-datalist" style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px">
-          <input type="text" id="b_${slot.id}_away" value="${b[slot.id+'_away']||''}" placeholder="Away team..." list="team-datalist" style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px">
-          <input type="text" id="b_${slot.id}_winner" value="${b[slot.id+'_winner']||''}" placeholder="Winner..." list="team-datalist" style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;color:var(--gold);font-size:11px;padding:4px 6px;outline:none">
-        </div>`;
-      }).join('')}
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Type team names exactly as in the draft. Winner field highlighted in gold.</div>
+    <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
+      ${['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+         'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+         'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+         'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'].map(id=>`
+        <div style="background:var(--card2);border-radius:7px;padding:9px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.04em">${id.replace('_',' ').toUpperCase()}</div>
+          <input type="text" id="b_${id}_home" value="${getBracketVal(id+'_home')}" placeholder="Home..." list="team-dl"
+            style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px">
+          <input type="text" id="b_${id}_away" value="${getBracketVal(id+'_away')}" placeholder="Away..." list="team-dl"
+            style="width:100%;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:11px;padding:4px 6px;outline:none;margin-bottom:3px">
+          <input type="text" id="b_${id}_winner" value="${getBracketVal(id+'_winner')}" placeholder="Winner..." list="team-dl"
+            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;color:var(--gold);font-size:11px;padding:4px 6px;outline:none">
+        </div>`).join('')}
     </div>
-    <datalist id="team-datalist">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
     <div style="margin-top:12px">
       <button class="btn btn-gold" onclick="saveBracket()">💾 Save Bracket</button>
     </div>
@@ -1073,13 +1138,17 @@ function renderBracket(){
   document.getElementById('bracket-container').innerHTML=html;
 }
 
+function getBracketVal(id){ return (S.bracket||{})[id]||''; }
+
 function saveBracket(){
   if(!S.bracket)S.bracket={};
-  const allSlots=[...BRACKET_SLOTS.r32,...BRACKET_SLOTS.r16,...BRACKET_SLOTS.qf,...BRACKET_SLOTS.sf,...BRACKET_SLOTS.final,...BRACKET_SLOTS.third];
-  allSlots.forEach(slot=>{
-    S.bracket[slot.id+'_home']=document.getElementById(`b_${slot.id}_home`)?.value.trim()||'';
-    S.bracket[slot.id+'_away']=document.getElementById(`b_${slot.id}_away`)?.value.trim()||'';
-    S.bracket[slot.id+'_winner']=document.getElementById(`b_${slot.id}_winner`)?.value.trim()||'';
+  ['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+   'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+   'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+   'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'].forEach(id=>{
+    S.bracket[id+'_home']=document.getElementById(`b_${id}_home`)?.value.trim()||'';
+    S.bracket[id+'_away']=document.getElementById(`b_${id}_away`)?.value.trim()||'';
+    S.bracket[id+'_winner']=document.getElementById(`b_${id}_winner`)?.value.trim()||'';
   });
   S.bracket.champion=S.bracket['final_winner']||'';
   saveLocal();syncWrite();
