@@ -1300,22 +1300,24 @@ function setScore(id,side,v){
   toast('Score saved ✓');
 }
 function autoCalcStats(){
-  const gw={},gd={},gl={},gf={},ga={};
-  TEAMS.forEach(t=>{gw[t.name]=0;gd[t.name]=0;gl[t.name]=0;gf[t.name]=0;ga[t.name]=0;});
+  const gw={},gd={},gl={},gf={},ga={},cs={};
+  TEAMS.forEach(t=>{gw[t.name]=0;gd[t.name]=0;gl[t.name]=0;gf[t.name]=0;ga[t.name]=0;cs[t.name]=0;});
   MATCHES.forEach(m=>{
     const sc=S.scores[m.id];
     if(!sc||sc.hg===''||sc.ag===''||sc.hg==null||sc.ag==null)return;
     const h=+sc.hg,a=+sc.ag;
     gf[m.home]=(gf[m.home]||0)+h;gf[m.away]=(gf[m.away]||0)+a;
     ga[m.home]=(ga[m.home]||0)+a;ga[m.away]=(ga[m.away]||0)+h;
+    // Clean sheet per match — home gets CS if away scored 0, away gets CS if home scored 0
+    if(a===0)cs[m.home]=(cs[m.home]||0)+1;
+    if(h===0)cs[m.away]=(cs[m.away]||0)+1;
     if(h>a){gw[m.home]++;gl[m.away]++;}else if(a>h){gw[m.away]++;gl[m.home]++;}else{gd[m.home]++;gd[m.away]++;}
   });
   TEAMS.forEach(t=>{
     if(!S.teamStats[t.name])S.teamStats[t.name]={};
     const ts=S.teamStats[t.name];
     ts.gw=gw[t.name];ts.gd=gd[t.name];ts.gl=gl[t.name];ts.gf=gf[t.name];
-    const played=gw[t.name]+gd[t.name]+gl[t.name];
-    if(ts.manualCS===undefined)ts.cs=played>0&&ga[t.name]===0?1:0;
+    if(ts.manualCS===undefined)ts.cs=cs[t.name]||0;
   });
 }
 
