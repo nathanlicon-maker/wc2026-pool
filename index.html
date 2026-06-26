@@ -1103,10 +1103,10 @@ function renderBracket(){
   function res(code){return resolveSlot(code,st,thirds,thirdMap);}
   function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  const MH=58, GAP=12, U=MH+GAP;
+  const MH=54, GAP=22, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
-  const CW=165,CN=16,TW=1460,CX=TW/2;
+  const CW=165,CN=16,TW=1480,CX=TW/2;
   const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
   const FIN=CX-CW/2;
   const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
