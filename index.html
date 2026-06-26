@@ -1072,7 +1072,7 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   const win=gv(id+'_winner');
   const hWin=win&&homeRes.name&&win===homeRes.name;
   const aWin=win&&awayRes.name&&win===awayRes.name;
-  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:162px;flex-shrink:0">
+  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:165px;flex-shrink:0">
     <div style="background:rgba(255,255,255,0.07);padding:2px 6px;display:flex;justify-content:space-between;font-size:9px;color:var(--muted);letter-spacing:0.04em">
       <span style="font-weight:800;color:var(--white)">M${mNum}</span>
       <span>${fmtDT(dtStr)} · ${venue}</span>
@@ -1103,10 +1103,10 @@ function renderBracket(){
   function res(code){return resolveSlot(code,st,thirds,thirdMap);}
   function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  const MH=68, GAP=8, U=MH+GAP;
+  const MH=58, GAP=12, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
-  const CW=180,CN=14,TW=1600,CX=TW/2;
+  const CW=165,CN=16,TW=1460,CX=TW/2;
   const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
   const FIN=CX-CW/2;
   const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
