@@ -1053,15 +1053,15 @@ function teamRow(res,isWin){
   const pts=res.name&&owner?calcTeamPts(res.name):null;
   const t=res.name?TEAMS.find(x=>x.name===res.name):null;
   const isDH=t&&t.rank>(S.config.dh||20);
-  if(!res.name&&!res.label) return `<div style="min-height:18px;padding:2px 6px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:10px;font-style:italic">TBD</div>`;
-  if(!res.name) return `<div style="min-height:18px;padding:2px 6px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:10px;font-style:italic">${res.label}</div>`;
-  return `<div style="min-height:18px;padding:2px 6px;display:flex;align-items:center;gap:4px;
+  if(!res.name&&!res.label) return `<div style="min-height:11px;padding:1px 6px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:10px;font-style:italic">TBD</div>`;
+  if(!res.name) return `<div style="min-height:11px;padding:1px 6px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:10px;font-style:italic">${res.label}</div>`;
+  return `<div style="min-height:11px;padding:1px 6px;display:flex;align-items:center;gap:4px;
     background:${isWin?'rgba(212,168,67,0.12)':'transparent'};
     border-left:${isWin?'3px solid var(--gold)':'3px solid transparent'}">
-    <span style="font-size:12px">${res.flag||t?.flag||'🏳️'}</span>
+    <span style="font-size:11px">${res.flag||t?.flag||'🏳️'}</span>
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;font-weight:${isWin?700:500};color:${isWin?'var(--gold)':'var(--white)'};
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px">${res.name}${isDH?' 🌶️':''}</div>
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.name}${isDH?' 🌶️':''}</div>
       ${owner?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
     </div>
     ${isWin?'<span style="color:var(--gold);font-size:10px">✓</span>':''}
@@ -1072,8 +1072,8 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   const win=gv(id+'_winner');
   const hWin=win&&homeRes.name&&win===homeRes.name;
   const aWin=win&&awayRes.name&&win===awayRes.name;
-  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:168px;flex-shrink:0">
-    <div style="background:rgba(255,255,255,0.07);padding:1px 5px;display:flex;justify-content:space-between;font-size:8px;color:var(--muted);letter-spacing:0.03em">
+  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:165px;flex-shrink:0">
+    <div style="background:rgba(255,255,255,0.08);padding:1px 5px;display:flex;justify-content:space-between;font-size:8px;color:var(--muted);letter-spacing:0.03em">
       <span style="font-weight:800;color:var(--white)">M${mNum}</span>
       <span>${fmtDT(dtStr)} · ${venue}</span>
     </div>
@@ -1103,10 +1103,10 @@ function renderBracket(){
   function res(code){return resolveSlot(code,st,thirds,thirdMap);}
   function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  const MH=46, GAP=16, U=MH+GAP;
+  const MH=38, GAP=20, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
-  const CW=168,CN=14,TW=1460,CX=TW/2;
+  const CW=165,CN=14,TW=1440,CX=TW/2;
   const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
   const FIN=CX-CW/2;
   const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
