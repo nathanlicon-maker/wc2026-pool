@@ -1083,9 +1083,9 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   </div>`;
 }
 
-function hLine(t,l,w){return `<div style="position:absolute;top:${t}px;left:${l}px;width:${w}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;}
-function vL(t1,t2,x){return `<div style="position:absolute;top:${t1-20}px;left:${x}px;width:1px;height:${t2-t1+40}px;background:rgba(255,255,255,0.15)"></div>`;} function vLine(t1,t2,x){return vL(t1,t2,x);} function vLine(t1,t2,x){return vL(t1,t2,x);} function vLine(t1,t2,x){return vL(t1,t2,x);}
-function mLine(t1,t2,x,w){const m=(t1+t2)/2;return `<div style="position:absolute;top:${m}px;left:${x}px;width:${w}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;}
+function hLine(t,l,w){return `<div style="position:absolute;top:${t}px;left:${l}px;width:${w}px;height:1px;background:rgba(255,255,255,0.25)"></div>`;}
+function vL(t1,t2,x){return `<div style="position:absolute;top:${t1}px;left:${x}px;width:1px;height:${t2-t1}px;background:rgba(255,255,255,0.35)"></div>`;} function vLine(t1,t2,x){return vL(t1,t2,x);} function vLine(t1,t2,x){return vL(t1,t2,x);} function vLine(t1,t2,x){return vL(t1,t2,x);} function vLine(t1,t2,x){return vL(t1,t2,x);}
+function mLine(t1,t2,x,w){const m=(t1+t2)/2;return `<div style="position:absolute;top:${m}px;left:${x}px;width:${w}px;height:1px;background:rgba(255,255,255,0.35)"></div>`;}
 
 function renderBracket(){
   if(!S.bracket)S.bracket={};
