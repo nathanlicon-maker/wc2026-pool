@@ -925,10 +925,396 @@ function submitFeedback(){
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// KNOCKOUT BRACKET — Visual bracket with proper spacing & connectors
+// KNOCKOUT BRACKET — Auto-populates from group stage results
+// Official FIFA 2026 match numbers 73-88, times in CDT (ET-1hr)
 // ═══════════════════════════════════════════════════════════════════
 
 function gv(id){return(S.bracket||{})[id]||'';}
+
+// Official R32 schedule: match number, seeding, date/time CDT, venue
+const R32_SCHEDULE=[
+  {id:'r32_1', matchNum:73, date:'2026-06-28T18:00', venue:'Los Angeles',   home:'2A', away:'2B'},
+  {id:'r32_2', matchNum:74, date:'2026-06-28T22:30', venue:'Boston',        home:'1E', away:'3ABCDF'},
+  {id:'r32_3', matchNum:75, date:'2026-06-29T13:00', venue:'Guadalajara',   home:'1F', away:'2C'},
+  {id:'r32_4', matchNum:76, date:'2026-06-29T17:00', venue:'Houston',       home:'1C', away:'2F'},
+  {id:'r32_5', matchNum:77, date:'2026-06-29T21:00', venue:'New York/NJ',   home:'1I', away:'3CDFGH'},
+  {id:'r32_6', matchNum:78, date:'2026-06-30T12:00', venue:'Dallas',        home:'2E', away:'2I'},
+  {id:'r32_7', matchNum:79, date:'2026-06-30T20:00', venue:'Mexico City',   home:'1A', away:'3CEFHI'},
+  {id:'r32_8', matchNum:80, date:'2026-07-01T11:00', venue:'Atlanta',       home:'1L', away:'3EHIJK'},
+  {id:'r32_9', matchNum:81, date:'2026-07-01T20:00', venue:'San Francisco', home:'1D', away:'3BEFIJ'},
+  {id:'r32_10',matchNum:82, date:'2026-07-01T20:00', venue:'Seattle',       home:'1G', away:'3AEHIJ'},
+  {id:'r32_11',matchNum:83, date:'2026-07-02T18:00', venue:'Toronto',       home:'2K', away:'2L'},
+  {id:'r32_12',matchNum:84, date:'2026-07-02T23:00', venue:'Los Angeles',   home:'1H', away:'2J'},
+  {id:'r32_13',matchNum:85, date:'2026-07-03T12:00', venue:'Dallas',        home:'1B', away:'3EFGIJ'},
+  {id:'r32_14',matchNum:86, date:'2026-07-03T17:00', venue:'Miami',         home:'1J', away:'2H'},
+  {id:'r32_15',matchNum:87, date:'2026-07-03T20:30', venue:'Kansas City',   home:'1K', away:'3DEIJL'},
+  {id:'r32_16',matchNum:88, date:'2026-07-03T13:00', venue:'Dallas',        home:'2D', away:'2G'},
+];
+
+// Official R16 schedule
+const R16_SCHEDULE=[
+  {id:'r16_1', matchNum:90, date:'2026-07-04T11:00', venue:'Houston',       home:'W73', away:'W75'},
+  {id:'r16_2', matchNum:89, date:'2026-07-04T15:00', venue:'Philadelphia',  home:'W74', away:'W77'},
+  {id:'r16_3', matchNum:91, date:'2026-07-05T14:00', venue:'New York/NJ',   home:'W76', away:'W78'},
+  {id:'r16_4', matchNum:92, date:'2026-07-05T20:00', venue:'Mexico City',   home:'W79', away:'W80'},
+  {id:'r16_5', matchNum:93, date:'2026-07-06T13:00', venue:'Dallas',        home:'W83', away:'W84'},
+  {id:'r16_6', matchNum:94, date:'2026-07-06T19:00', venue:'Seattle',       home:'W81', away:'W82'},
+  {id:'r16_7', matchNum:96, date:'2026-07-07T20:00', venue:'Vancouver',     home:'W85', away:'W87'},
+  {id:'r16_8', matchNum:95, date:'2026-07-07T14:00', venue:'Atlanta',       home:'W86', away:'W88'},
+];
+
+// QF, SF, Final schedule
+const QF_SCHEDULE=[
+  {id:'qf_1', matchNum:97, date:'2026-07-09T14:00', venue:'Kansas City',   home:'W89', away:'W90'},
+  {id:'qf_2', matchNum:98, date:'2026-07-09T19:00', venue:'Dallas',        home:'W91', away:'W92'},
+  {id:'qf_3', matchNum:99, date:'2026-07-10T14:00', venue:'Los Angeles',   home:'W93', away:'W94'},
+  {id:'qf_4', matchNum:100,date:'2026-07-10T19:00', venue:'Miami',         home:'W95', away:'W96'},
+];
+const SF_SCHEDULE=[
+  {id:'sf_1', matchNum:101,date:'2026-07-14T14:00', venue:'Dallas',        home:'W97', away:'W98'},
+  {id:'sf_2', matchNum:102,date:'2026-07-15T14:00', venue:'Atlanta',       home:'W99', away:'W100'},
+];
+const FINAL_SCHEDULE={id:'final', matchNum:104,date:'2026-07-19T13:00', venue:'New York/NJ'};
+const THIRD_SCHEDULE={id:'third', matchNum:103,date:'2026-07-18T13:00', venue:'Miami'};
+
+// FIFA's 495-combination third place seeding table (most common combinations)
+// Key: sorted string of 8 qualifying groups → which R32 slot gets which 3rd place team
+// Maps groups A-L that advance 3rd place teams to the correct R32 slots
+// r32_2=3ABCDF, r32_5=3CDFGH, r32_7=3CEFHI, r32_8=3EHIJK, r32_9=3BEFIJ, r32_10=3AEHIJ, r32_13=3EFGIJ, r32_15=3DEIJL
+function get3rdPlaceForSlot(slot, advancing3rdGroups){
+  // advancing3rdGroups = sorted array like ['B','D','E','F','G','H','I','J']
+  const key = advancing3rdGroups.sort().join('');
+  // Simplified mapping based on FIFA Annex C rules
+  // Each slot has eligible groups — assign the first eligible 3rd place team not yet assigned
+  const eligibility={
+    'r32_2': ['A','B','C','D','F'],  // M74: 3ABCDF
+    'r32_5': ['C','D','F','G','H'],  // M77: 3CDFGH
+    'r32_7': ['C','E','F','H','I'],  // M79: 3CEFHI
+    'r32_8': ['E','H','I','J','K'],  // M80: 3EHIJK
+    'r32_9': ['B','E','F','I','J'],  // M81: 3BEFIJ
+    'r32_10':['A','E','H','I','J'],  // M82: 3AEHIJ
+    'r32_13':['E','F','G','I','J'],  // M85: 3EFGIJ
+    'r32_15':['D','E','I','J','L'],  // M87: 3DEIJL
+  };
+  const eligible = (eligibility[slot]||[]).filter(g=>advancing3rdGroups.includes(g));
+  return eligible[0]||null; // return the group letter
+}
+
+// Get group standings from entered scores
+function getGroupStandings(){
+  const standings={};
+  ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
+    const teams=TEAMS.filter(t=>t.group===g).map(t=>{
+      const ts=S.teamStats[t.name]||{};
+      const gw=ts.gw||0,gd=ts.gd||0,gl=ts.gl||0,gf=ts.gf||0;
+      const ga_val=MATCHES.filter(m=>(m.home===t.name||m.away===t.name)).reduce((acc,m)=>{
+        const sc=S.scores[m.id];
+        if(!sc||sc.hg==null||sc.ag==null)return acc;
+        return acc+(m.home===t.name?+sc.ag:+sc.hg);
+      },0);
+      const pts=gw*3+gd;
+      const gd_val=gf-ga_val;
+      return {name:t.name,flag:t.flag,pts,gw,gd,gl,gf,ga:ga_val,gd_val,rank:t.rank};
+    }).sort((a,b)=>b.pts-a.pts||b.gd_val-a.gd_val||b.gf-a.gf||a.rank-b.rank);
+    standings[g]=teams;
+  });
+  return standings;
+}
+
+// Auto-populate bracket from current group standings
+function autoFillBracket(){
+  const standings=getGroupStandings();
+  if(!S.bracket)S.bracket={};
+
+  // Get 1st and 2nd place teams
+  const winners={}, runners={};
+  ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
+    const t=standings[g];
+    if(t.length>=1)winners[g]=t[0];
+    if(t.length>=2)runners[g]=t[1];
+  });
+
+  // Get all 3rd place teams and rank them
+  const thirds=[];
+  ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
+    const t=standings[g];
+    if(t.length>=3){
+      thirds.push({...t[2],group:g});
+    }
+  });
+  thirds.sort((a,b)=>b.pts-a.pts||b.gd_val-a.gd_val||b.gf-a.gf||a.rank-b.rank);
+  const top8thirds=thirds.slice(0,8);
+  const advancing3rdGroups=top8thirds.map(t=>t.group);
+
+  // Map slot codes to actual teams
+  function teamForCode(code){
+    if(!code)return '';
+    if(code.startsWith('1')&&code.length===2)return winners[code[1]]?.name||'';
+    if(code.startsWith('2')&&code.length===2)return runners[code[1]]?.name||'';
+    if(code.startsWith('3')){
+      const group=get3rdPlaceForSlot(
+        R32_SCHEDULE.find(r=>r.home===code||r.away===code)?.id,
+        advancing3rdGroups
+      );
+      if(group){
+        const t=thirds.find(x=>x.group===group);
+        return t?.name||'';
+      }
+    }
+    return '';
+  }
+
+  // Fill R32
+  R32_SCHEDULE.forEach(m=>{
+    const home=teamForCode(m.home);
+    const away=teamForCode(m.away);
+    if(home)S.bracket[m.id+'_home']=home;
+    if(away)S.bracket[m.id+'_away']=away;
+  });
+
+  // Fill KO rounds from saved winners
+  [...R16_SCHEDULE,...QF_SCHEDULE,...SF_SCHEDULE].forEach(m=>{
+    // home/away are like 'W73','W74' — look up winner of that match
+    const homeMatch=R32_SCHEDULE.find(r=>r.matchNum===parseInt((m.home||'').replace('W','')))
+      || R16_SCHEDULE.find(r=>r.matchNum===parseInt((m.home||'').replace('W','')))
+      || QF_SCHEDULE.find(r=>r.matchNum===parseInt((m.home||'').replace('W','')))||
+      SF_SCHEDULE.find(r=>r.matchNum===parseInt((m.home||'').replace('W','')));
+    const awayMatch=R32_SCHEDULE.find(r=>r.matchNum===parseInt((m.away||'').replace('W','')))
+      || R16_SCHEDULE.find(r=>r.matchNum===parseInt((m.away||'').replace('W','')))
+      || QF_SCHEDULE.find(r=>r.matchNum===parseInt((m.away||'').replace('W','')))||
+      SF_SCHEDULE.find(r=>r.matchNum===parseInt((m.away||'').replace('W','')));
+    if(homeMatch&&S.bracket[homeMatch.id+'_winner'])S.bracket[m.id+'_home']=S.bracket[homeMatch.id+'_winner'];
+    if(awayMatch&&S.bracket[awayMatch.id+'_winner'])S.bracket[m.id+'_away']=S.bracket[awayMatch.id+'_winner'];
+  });
+  // Final
+  const sf1w=S.bracket['sf_1_winner'],sf2w=S.bracket['sf_2_winner'];
+  if(sf1w)S.bracket['final_home']=sf1w;
+  if(sf2w)S.bracket['final_away']=sf2w;
+  S.bracket.champion=S.bracket['final_winner']||'';
+  // 3rd place
+  if(S.bracket['sf_1_winner']||S.bracket['sf_2_winner']){
+    // handled manually
+  }
+}
+
+function renderBracket(){
+  if(!S.bracket)S.bracket={};
+
+  // Auto-fill bracket from group stage data
+  autoFillBracket();
+
+  const champion=gv('champion');
+  const MH=86, GAP=6, UNIT=MH+GAP;
+
+  function matchTop(round,idx){
+    const spread=Math.pow(2,round);
+    return idx*spread*UNIT+(spread-1)*UNIT/2;
+  }
+
+  function teamRow(name,isWinner){
+    const t=TEAMS.find(x=>x.name===name);
+    const owner=S.draft[name]||'';
+    const pts=owner?calcTeamPts(name):null;
+    const isDH=t&&t.rank>(S.config.dh||20);
+    if(!name)return `<div style="padding:6px 8px;min-height:34px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:11px;font-style:italic">TBD</div>`;
+    return `<div style="padding:5px 8px;min-height:34px;display:flex;align-items:center;gap:5px;background:${isWinner?'rgba(212,168,67,0.12)':'transparent'};border-left:${isWinner?'3px solid var(--gold)':'3px solid transparent'}">
+      <span style="font-size:13px">${t?.flag||'🏳️'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:${isWinner?700:500};color:${isWinner?'var(--gold)':'var(--white)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${isDH?' 🌶️':''}</div>
+        ${owner?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
+      </div>
+      ${isWinner?'<span style="color:var(--gold);font-size:9px">✓</span>':''}
+    </div>`;
+  }
+
+  function mCard(id,matchNum,dtStr,venue,top,left,width){
+    const home=gv(id+'_home'),away=gv(id+'_away'),winner=gv(id+'_winner');
+    const d=parseCT(dtStr);
+    const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago',hour12:true});
+    const dateStr=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<div style="position:absolute;top:${top}px;left:${left}px;width:${width}px;background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;height:${MH}px">
+      <div style="background:rgba(255,255,255,0.07);padding:2px 5px;display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--muted);letter-spacing:0.04em">
+        <span style="font-weight:700">M${matchNum}</span>
+        <span>${dateStr} ${timeStr} CT</span>
+        <span style="color:rgba(255,255,255,0.3)">${venue}</span>
+      </div>
+      ${teamRow(home,winner&&winner===home)}
+      <div style="height:1px;background:var(--line)"></div>
+      ${teamRow(away,winner&&winner===away)}
+    </div>`;
+  }
+
+  function hLine(top,left,width){
+    return `<div style="position:absolute;top:${top+MH/2}px;left:${left}px;width:${width}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+  }
+  function vLine(t1,t2,x){
+    return `<div style="position:absolute;top:${t1}px;left:${x}px;width:1px;height:${t2-t1}px;background:rgba(255,255,255,0.15)"></div>`;
+  }
+  function midLine(t1,t2,fromX,width){
+    const mid=(t1+t2)/2;
+    return `<div style="position:absolute;top:${mid}px;left:${fromX}px;width:${width}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;
+  }
+
+  const CW=175,CONN=18,TOTAL_W=1560,CENTER=TOTAL_W/2;
+  const L_R32=0,L_R16=L_R32+CW+CONN,L_QF=L_R16+CW+CONN,L_SF=L_QF+CW+CONN;
+  const FINAL=CENTER-CW/2;
+  const R_SF=TOTAL_W-L_SF-CW,R_QF=TOTAL_W-L_QF-CW,R_R16=TOTAL_W-L_R16-CW,R_R32=TOTAL_W-L_R32-CW;
+  const TOTAL_H=8*UNIT+200;
+
+  const hdr=(color,left,txt)=>`<div style="position:absolute;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.08em;color:${color};text-align:center;padding:3px 0;top:-26px;left:${left}px;width:${CW}px">${txt}</div>`;
+
+  let html=`<div style="position:relative;width:${TOTAL_W}px;height:${TOTAL_H}px;min-width:${TOTAL_W}px;margin-top:32px">`;
+
+  html+=hdr('#5a9e7a',L_R32,'ROUND OF 32');
+  html+=hdr('#5a7a9e',L_R16,'ROUND OF 16');
+  html+=hdr('#8a6a9e',L_QF,'QUARTER-FINALS');
+  html+=hdr('#9e7a4a',L_SF,'SEMI-FINALS');
+  html+=hdr('var(--gold)',FINAL,'🏆 FINAL');
+  html+=hdr('#9e7a4a',R_SF,'SEMI-FINALS');
+  html+=hdr('#8a6a9e',R_QF,'QUARTER-FINALS');
+  html+=hdr('#5a7a9e',R_R16,'ROUND OF 16');
+  html+=hdr('#5a9e7a',R_R32,'ROUND OF 32');
+
+  // LEFT R32 (matches 73-80 top half)
+  const leftR32=[R32_SCHEDULE[0],R32_SCHEDULE[1],R32_SCHEDULE[2],R32_SCHEDULE[3],
+                 R32_SCHEDULE[4],R32_SCHEDULE[5],R32_SCHEDULE[6],R32_SCHEDULE[7]];
+  leftR32.forEach((m,i)=>{
+    html+=mCard(m.id,m.matchNum,m.date,m.venue,matchTop(0,i),L_R32,CW);
+    html+=hLine(matchTop(0,i),L_R32+CW,CONN);
+  });
+  // LEFT R32→R16
+  const leftR16=[R16_SCHEDULE[0],R16_SCHEDULE[1],R16_SCHEDULE[2],R16_SCHEDULE[3]];
+  for(let i=0;i<4;i++){
+    const t1=matchTop(0,i*2)+MH/2,t2=matchTop(0,i*2+1)+MH/2;
+    html+=vLine(t1,t2,L_R32+CW+CONN-1);
+    html+=midLine(t1,t2,L_R32+CW+CONN-1,CONN+1);
+    html+=mCard(leftR16[i].id,leftR16[i].matchNum,leftR16[i].date,leftR16[i].venue,matchTop(1,i),L_R16,CW);
+    html+=hLine(matchTop(1,i),L_R16+CW,CONN);
+  }
+  // LEFT R16→QF
+  const leftQF=[QF_SCHEDULE[0],QF_SCHEDULE[1]];
+  for(let i=0;i<2;i++){
+    const t1=matchTop(1,i*2)+MH/2,t2=matchTop(1,i*2+1)+MH/2;
+    html+=vLine(t1,t2,L_R16+CW+CONN-1);
+    html+=midLine(t1,t2,L_R16+CW+CONN-1,CONN+1);
+    html+=mCard(leftQF[i].id,leftQF[i].matchNum,leftQF[i].date,leftQF[i].venue,matchTop(2,i),L_QF,CW);
+    html+=hLine(matchTop(2,i),L_QF+CW,CONN);
+  }
+  // LEFT QF→SF
+  {const t1=matchTop(2,0)+MH/2,t2=matchTop(2,1)+MH/2;
+  html+=vLine(t1,t2,L_QF+CW+CONN-1);
+  html+=midLine(t1,t2,L_QF+CW+CONN-1,CONN+1);
+  html+=mCard(SF_SCHEDULE[0].id,SF_SCHEDULE[0].matchNum,SF_SCHEDULE[0].date,SF_SCHEDULE[0].venue,matchTop(3,0),L_SF,CW);
+  html+=hLine(matchTop(3,0),L_SF+CW,FINAL-(L_SF+CW));}
+
+  // RIGHT R32 (matches 81-88)
+  const rightR32=[R32_SCHEDULE[8],R32_SCHEDULE[9],R32_SCHEDULE[10],R32_SCHEDULE[11],
+                  R32_SCHEDULE[12],R32_SCHEDULE[13],R32_SCHEDULE[14],R32_SCHEDULE[15]];
+  rightR32.forEach((m,i)=>{
+    html+=mCard(m.id,m.matchNum,m.date,m.venue,matchTop(0,i),R_R32,CW);
+    html+=hLine(matchTop(0,i),R_R32-CONN,CONN);
+  });
+  // RIGHT R32→R16
+  const rightR16=[R16_SCHEDULE[4],R16_SCHEDULE[5],R16_SCHEDULE[6],R16_SCHEDULE[7]];
+  for(let i=0;i<4;i++){
+    const t1=matchTop(0,i*2)+MH/2,t2=matchTop(0,i*2+1)+MH/2;
+    html+=vLine(t1,t2,R_R32-CONN);
+    html+=midLine(t1,t2,R_R32-CONN,CONN);
+    html+=mCard(rightR16[i].id,rightR16[i].matchNum,rightR16[i].date,rightR16[i].venue,matchTop(1,i),R_R16,CW);
+    html+=hLine(matchTop(1,i),R_R16-CONN,CONN);
+  }
+  // RIGHT R16→QF
+  const rightQF=[QF_SCHEDULE[2],QF_SCHEDULE[3]];
+  for(let i=0;i<2;i++){
+    const t1=matchTop(1,i*2)+MH/2,t2=matchTop(1,i*2+1)+MH/2;
+    html+=vLine(t1,t2,R_R16-CONN);
+    html+=midLine(t1,t2,R_R16-CONN,CONN);
+    html+=mCard(rightQF[i].id,rightQF[i].matchNum,rightQF[i].date,rightQF[i].venue,matchTop(2,i),R_QF,CW);
+    html+=hLine(matchTop(2,i),R_QF-CONN,CONN);
+  }
+  // RIGHT QF→SF
+  {const t1=matchTop(2,0)+MH/2,t2=matchTop(2,1)+MH/2;
+  html+=vLine(t1,t2,R_QF-CONN);
+  html+=midLine(t1,t2,R_QF-CONN,CONN);
+  html+=mCard(SF_SCHEDULE[1].id,SF_SCHEDULE[1].matchNum,SF_SCHEDULE[1].date,SF_SCHEDULE[1].venue,matchTop(3,0),R_SF,CW);
+  html+=hLine(matchTop(3,0),FINAL+CW,R_SF-(FINAL+CW));}
+
+  // FINAL
+  const finalTop=matchTop(3,0);
+  html+=mCard(FINAL_SCHEDULE.id,FINAL_SCHEDULE.matchNum,FINAL_SCHEDULE.date,FINAL_SCHEDULE.venue,finalTop,FINAL,CW);
+
+  // Champion card
+  const champTop=finalTop+MH+10;
+  html+=`<div style="position:absolute;top:${champTop}px;left:${FINAL}px;width:${CW}px;background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:10px;text-align:center">
+    ${champion?`<div style="font-size:22px">🏆</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold)">${champion}</div>
+      <div style="font-size:9px;color:var(--muted)">WORLD CHAMPION</div>
+      ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:3px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
+    `:`<div style="font-size:11px;color:var(--muted);font-style:italic">Champion TBD</div>`}
+  </div>`;
+
+  // 3rd Place
+  const thirdTop=champTop+86;
+  html+=`<div style="position:absolute;top:${thirdTop}px;left:${FINAL}px;width:${CW}px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#7a7a7a;text-align:center;letter-spacing:0.06em">3RD PLACE</div>`;
+  html+=mCard(THIRD_SCHEDULE.id,THIRD_SCHEDULE.matchNum,THIRD_SCHEDULE.date,THIRD_SCHEDULE.venue,thirdTop+18,FINAL,CW);
+
+  html+=`</div>`;
+
+  // Commissioner panel — only for entering winners
+  const allIds=['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+    'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+    'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+    'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'];
+
+  const allSchedule=[...R32_SCHEDULE,...R16_SCHEDULE,...QF_SCHEDULE,...SF_SCHEDULE,
+    {...FINAL_SCHEDULE},{...THIRD_SCHEDULE}];
+
+  html+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter Match Winners</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">
+      Teams auto-fill from group standings. Just enter the <strong style="color:var(--gold)">winner</strong> of each completed match — the bracket updates automatically for everyone.
+    </div>
+    <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+      ${allIds.map(id=>{
+        const sched=allSchedule.find(s=>s.id===id)||{};
+        const home=gv(id+'_home')||'TBD',away=gv(id+'_away')||'TBD';
+        const d=sched.date?parseCT(sched.date):null;
+        const timeStr=d?d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago',hour12:true})+' CT':'';
+        return `<div style="background:var(--card2);border-radius:7px;padding:9px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.04em">M${sched.matchNum||id} · ${timeStr}</div>
+          <div style="font-size:11px;color:var(--white);margin-bottom:5px">${home} vs ${away}</div>
+          <input type="text" id="b_${id}_winner" value="${gv(id+'_winner')}" placeholder="Winner..." list="team-dl"
+            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;color:var(--gold);font-size:11px;padding:4px 6px;outline:none;box-sizing:border-box">
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-gold" onclick="saveBracket()">💾 Save Winners</button>
+      <button class="btn btn-ghost" onclick="renderBracket()">🔄 Refresh Bracket</button>
+    </div>
+  </div>`;
+
+  document.getElementById('bracket-container').innerHTML=html;
+}
+
+function saveBracket(){
+  if(!S.bracket)S.bracket={};
+  const allIds=['r32_1','r32_2','r32_3','r32_4','r32_5','r32_6','r32_7','r32_8',
+   'r32_9','r32_10','r32_11','r32_12','r32_13','r32_14','r32_15','r32_16',
+   'r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8',
+   'qf_1','qf_2','qf_3','qf_4','sf_1','sf_2','final','third'];
+  allIds.forEach(id=>{
+    const w=document.getElementById(`b_${id}_winner`)?.value.trim()||'';
+    if(w)S.bracket[id+'_winner']=w;
+  });
+  S.bracket.champion=S.bracket['final_winner']||'';
+  saveLocal();syncWrite();
+  renderBracket();
+  toast('🏆 Bracket saved & synced ✓');
+}
+
+
 
 function renderBracket(){
   if(!S.bracket)S.bracket={};
