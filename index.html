@@ -926,100 +926,104 @@ function submitFeedback(){
 
 // ═══════════════════════════════════════════════════════════════════
 // KNOCKOUT BRACKET — Auto-populates from group standings
-// Official FIFA 2026 match numbers, times CDT, venues corrected
+// Official FIFA 2026 match numbers, times in CDT
 // ═══════════════════════════════════════════════════════════════════
 
-// All times stored as CDT (ET - 1hr). Venues per FIFA.com official schedule.
-// R32 bracket flow per FIFA official regulations:
-// M89: W74+W77 → Philadelphia
-// M90: W73+W75 → Houston  
-// M91: W76+W78 → New York/NJ
-// M92: W79+W80 → Mexico City
-// M93: W83+W84 → Dallas
-// M94: W81+W82 → Seattle  ← USA(M81) feeds Seattle NOT Dallas
-// M95: W86+W88 → Atlanta
-// M96: W85+W87 → Vancouver
-// QF97: W89+W90 → Boston
-// QF98: W91+W92 → Dallas
-// QF99: W93+W94 → Los Angeles
-// QF100: W95+W96 → Miami
-// SF101: W97+W98 → Dallas
-// SF102: W99+W100 → Atlanta
-
+// Official R32 fixtures per FIFA regulations
 const R32=[
-  // LEFT SIDE (M73-M80)
-  {id:'r32_1', m:73, dt:'2026-06-28T14:00', v:'Los Angeles',   hc:'2A',    ac:'2B'},
+  {id:'r32_1', m:73, dt:'2026-06-28T18:00', v:'Los Angeles',   hc:'2A',    ac:'2B'},
   {id:'r32_2', m:74, dt:'2026-06-28T22:30', v:'Boston',        hc:'1E',    ac:'3ABCDF'},
-  {id:'r32_3', m:75, dt:'2026-06-29T20:00', v:'Monterrey',     hc:'1F',    ac:'2C'},
-  {id:'r32_4', m:76, dt:'2026-06-29T12:00', v:'Houston',       hc:'1C',    ac:'2F'},
-  {id:'r32_5', m:77, dt:'2026-06-30T16:00', v:'New York/NJ',   hc:'1I',    ac:'3CDFGH'},
+  {id:'r32_3', m:75, dt:'2026-06-29T13:00', v:'Guadalajara',   hc:'1F',    ac:'2C'},
+  {id:'r32_4', m:76, dt:'2026-06-29T17:00', v:'Houston',       hc:'1C',    ac:'2F'},
+  {id:'r32_5', m:77, dt:'2026-06-29T21:00', v:'New York/NJ',   hc:'1I',    ac:'3CDFGH'},
   {id:'r32_6', m:78, dt:'2026-06-30T12:00', v:'Dallas',        hc:'2E',    ac:'2I'},
   {id:'r32_7', m:79, dt:'2026-06-30T20:00', v:'Mexico City',   hc:'1A',    ac:'3CEFHI'},
   {id:'r32_8', m:80, dt:'2026-07-01T11:00', v:'Atlanta',       hc:'1L',    ac:'3EHIJK'},
-  // RIGHT SIDE (M81-M88)
-  {id:'r32_9', m:81, dt:'2026-07-01T19:00', v:'San Francisco', hc:'1D',    ac:'3BEFIJ'},
-  {id:'r32_10',m:82, dt:'2026-07-01T15:00', v:'Seattle',       hc:'1G',    ac:'3AEHIJ'},
+  {id:'r32_9', m:81, dt:'2026-07-01T20:00', v:'San Francisco', hc:'1D',    ac:'3BEFIJ'},
+  {id:'r32_10',m:82, dt:'2026-07-01T20:00', v:'Seattle',       hc:'1G',    ac:'3AEHIJ'},
   {id:'r32_11',m:83, dt:'2026-07-02T18:00', v:'Toronto',       hc:'2K',    ac:'2L'},
-  {id:'r32_12',m:84, dt:'2026-07-02T14:00', v:'Los Angeles',   hc:'1H',    ac:'2J'},
-  {id:'r32_13',m:85, dt:'2026-07-02T22:00', v:'Vancouver',     hc:'1B',    ac:'3EFGIJ'},
+  {id:'r32_12',m:84, dt:'2026-07-02T23:00', v:'Los Angeles',   hc:'1H',    ac:'2J'},
+  {id:'r32_13',m:85, dt:'2026-07-03T12:00', v:'Dallas',        hc:'1B',    ac:'3EFGIJ'},
   {id:'r32_14',m:86, dt:'2026-07-03T17:00', v:'Miami',         hc:'1J',    ac:'2H'},
   {id:'r32_15',m:87, dt:'2026-07-03T20:30', v:'Kansas City',   hc:'1K',    ac:'3DEIJL'},
   {id:'r32_16',m:88, dt:'2026-07-03T13:00', v:'Dallas',        hc:'2D',    ac:'2G'},
 ];
-
-// R16 — corrected bracket flow per FIFA.com
 const R16=[
-  // LEFT SIDE feeds
-  {id:'r16_1',m:89, dt:'2026-07-04T15:00', v:'Philadelphia',  f1:'r32_2', f2:'r32_5'},  // W74+W77
-  {id:'r16_2',m:90, dt:'2026-07-04T11:00', v:'Houston',       f1:'r32_1', f2:'r32_3'},  // W73+W75
-  {id:'r16_3',m:91, dt:'2026-07-05T14:00', v:'New York/NJ',   f1:'r32_4', f2:'r32_6'},  // W76+W78
-  {id:'r16_4',m:92, dt:'2026-07-05T20:00', v:'Mexico City',   f1:'r32_7', f2:'r32_8'},  // W79+W80
-  // RIGHT SIDE feeds
-  {id:'r16_5',m:93, dt:'2026-07-06T13:00', v:'Dallas',        f1:'r32_11',f2:'r32_12'}, // W83+W84
-  {id:'r16_6',m:94, dt:'2026-07-06T19:00', v:'Seattle',       f1:'r32_9', f2:'r32_10'}, // W81+W82 → Seattle
-  {id:'r16_7',m:96, dt:'2026-07-07T20:00', v:'Vancouver',     f1:'r32_13',f2:'r32_15'}, // W85+W87
-  {id:'r16_8',m:95, dt:'2026-07-07T14:00', v:'Atlanta',       f1:'r32_14',f2:'r32_16'}, // W86+W88
+  {id:'r16_1',m:90,dt:'2026-07-04T11:00',v:'Houston',      p:'W73+W75'},
+  {id:'r16_2',m:89,dt:'2026-07-04T15:00',v:'Philadelphia', p:'W74+W77'},
+  {id:'r16_3',m:91,dt:'2026-07-05T14:00',v:'New York/NJ',  p:'W76+W78'},
+  {id:'r16_4',m:92,dt:'2026-07-05T20:00',v:'Mexico City',  p:'W79+W80'},
+  {id:'r16_5',m:93,dt:'2026-07-06T13:00',v:'Dallas',       p:'W83+W84'},
+  {id:'r16_6',m:94,dt:'2026-07-06T19:00',v:'Seattle',      p:'W81+W82'},
+  {id:'r16_7',m:96,dt:'2026-07-07T20:00',v:'Vancouver',    p:'W85+W87'},
+  {id:'r16_8',m:95,dt:'2026-07-07T14:00',v:'Atlanta',      p:'W86+W88'},
 ];
-
-// QF — corrected
 const QF=[
-  {id:'qf_1',m:97, dt:'2026-07-09T14:00', v:'Boston',       f1:'r16_1', f2:'r16_2'},  // W89+W90
-  {id:'qf_2',m:98, dt:'2026-07-09T19:00', v:'Dallas',       f1:'r16_3', f2:'r16_4'},  // W91+W92
-  {id:'qf_3',m:99, dt:'2026-07-10T14:00', v:'Los Angeles',  f1:'r16_5', f2:'r16_6'},  // W93+W94
-  {id:'qf_4',m:100,dt:'2026-07-10T19:00', v:'Miami',        f1:'r16_7', f2:'r16_8'},  // W95+W96
+  {id:'qf_1',m:97, dt:'2026-07-09T14:00',v:'Kansas City', p:'W89+W90'},
+  {id:'qf_2',m:98, dt:'2026-07-09T19:00',v:'Dallas',      p:'W91+W92'},
+  {id:'qf_3',m:99, dt:'2026-07-10T14:00',v:'Los Angeles', p:'W93+W94'},
+  {id:'qf_4',m:100,dt:'2026-07-10T19:00',v:'Miami',       p:'W95+W96'},
 ];
 const SF=[
-  {id:'sf_1',m:101,dt:'2026-07-14T13:00', v:'Dallas',       f1:'qf_1',  f2:'qf_2'},
-  {id:'sf_2',m:102,dt:'2026-07-15T14:00', v:'Atlanta',      f1:'qf_3',  f2:'qf_4'},
+  {id:'sf_1',m:101,dt:'2026-07-14T14:00',v:'Dallas',      p:'W97+W98'},
+  {id:'sf_2',m:102,dt:'2026-07-15T14:00',v:'Atlanta',     p:'W99+W100'},
 ];
 const FINAL_M={id:'final',m:104,dt:'2026-07-19T13:00',v:'New York/NJ'};
 const THIRD_M={id:'third',m:103,dt:'2026-07-18T13:00',v:'Miami'};
 
-// All match IDs in order for commissioner panel
-const ALL_IDS=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
-
 function gv(id){return(S.bracket||{})[id]||'';}
 
+// Get current group standings from scores
 function groupStandings(){
   const st={};
   ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
     st[g]=TEAMS.filter(t=>t.group===g).map(t=>{
       const ts=S.teamStats[t.name]||{};
-      const gw=ts.gw||0,gd=ts.gd||0,gf=ts.gf||0;
+      const gw=ts.gw||0,gd=ts.gd||0,gl=ts.gl||0,gf=ts.gf||0;
       const ga=MATCHES.filter(m=>m.home===t.name||m.away===t.name).reduce((a,m)=>{
         const sc=S.scores[m.id];
         if(!sc||sc.hg==null||sc.ag==null)return a;
         return a+(m.home===t.name?+sc.ag:+sc.hg);
       },0);
-      return {name:t.name,flag:t.flag,pts:gw*3+gd,gw,gd,gf,ga,gDiff:gf-ga,rank:t.rank};
+      const pts=gw*3+gd, gDiff=gf-ga;
+      return {name:t.name,flag:t.flag,pts,gw,gd,gl,gf,ga,gDiff,rank:t.rank};
     }).sort((a,b)=>b.pts-a.pts||b.gDiff-a.gDiff||b.gf-a.gf||a.rank-b.rank);
   });
   return st;
 }
 
-function buildThirdMap(thirds){
-  const advancing=thirds.slice(0,8).map(t=>t.group);
-  const elig={
+// Resolve a slot code to team name or placeholder label
+function resolveSlot(code, st, thirds3rd, thirdMap){
+  if(!code)return {name:'',label:'TBD'};
+  // Group winner: '1A'
+  if(/^1[A-L]$/.test(code)){
+    const g=code[1], t=st[g]?.[0];
+    return t?{name:t.name,flag:t.flag}:{label:`Win Group ${g}`};
+  }
+  // Group runner-up: '2A'
+  if(/^2[A-L]$/.test(code)){
+    const g=code[1], t=st[g]?.[1];
+    return t?{name:t.name,flag:t.flag}:{label:`2nd Group ${g}`};
+  }
+  // 3rd place slot: '3ABCDF' etc.
+  if(code.startsWith('3')){
+    const groups=code.slice(1).split('');
+    // Find which 3rd place team is assigned to this slot
+    const slotId=R32.find(r=>r.hc===code||r.ac===code)?.id;
+    const assignedGroup=thirdMap[slotId];
+    if(assignedGroup){
+      const t=thirds3rd.find(x=>x.group===assignedGroup);
+      if(t)return {name:t.name,flag:t.flag};
+    }
+    return {label:`3rd ${groups.join('/')}`};
+  }
+  return {name:'',label:'TBD'};
+}
+
+// Build 3rd place assignment map
+function buildThirdMap(thirds3rd){
+  const advancing=thirds3rd.slice(0,8).map(t=>t.group);
+  const eligibility={
     'r32_2':['A','B','C','D','F'],
     'r32_5':['C','D','F','G','H'],
     'r32_7':['C','E','F','H','I'],
@@ -1029,39 +1033,12 @@ function buildThirdMap(thirds){
     'r32_13':['E','F','G','I','J'],
     'r32_15':['D','E','I','J','L'],
   };
-  const map={},used=new Set();
-  Object.keys(elig).forEach(slot=>{
-    const e=elig[slot].filter(g=>advancing.includes(g)&&!used.has(g));
-    if(e.length){map[slot]=e[0];used.add(e[0]);}
+  const map={}, used=new Set();
+  Object.keys(eligibility).forEach(slot=>{
+    const elig=eligibility[slot].filter(g=>advancing.includes(g)&&!used.has(g));
+    if(elig.length){map[slot]=elig[0];used.add(elig[0]);}
   });
   return map;
-}
-
-function resolveTeam(code,st,thirds,thirdMap){
-  if(!code)return {label:'TBD'};
-  if(/^1[A-L]$/.test(code)){
-    const t=st[code[1]]?.[0];
-    return t?{name:t.name,flag:t.flag}:{label:`Win Grp ${code[1]}`};
-  }
-  if(/^2[A-L]$/.test(code)){
-    const t=st[code[1]]?.[1];
-    return t?{name:t.name,flag:t.flag}:{label:`2nd Grp ${code[1]}`};
-  }
-  if(code.startsWith('3')){
-    const slotId=R32.find(r=>r.hc===code||r.ac===code)?.id;
-    const grp=thirdMap[slotId];
-    if(grp){const t=thirds.find(x=>x.group===grp);if(t)return {name:t.name,flag:t.flag};}
-    const groups=code.slice(1).split('');
-    return {label:`3rd ${groups.join('/')}`};
-  }
-  return {label:'TBD'};
-}
-
-function winnerOf(id){
-  const w=gv(id+'_winner');
-  if(w){const t=TEAMS.find(x=>x.name===w);return {name:w,flag:t?.flag||''};}
-  const match=ALL_IDS.find(m=>m.id===id);
-  return {label:`W${match?.m||id}`};
 }
 
 function fmtDT(dtStr){
@@ -1072,21 +1049,22 @@ function fmtDT(dtStr){
 }
 
 function teamRow(res,isWin){
-  const t=res.name?TEAMS.find(x=>x.name===res.name):null;
   const owner=res.name?S.draft[res.name]||'':'';
   const pts=res.name&&owner?calcTeamPts(res.name):null;
+  const t=res.name?TEAMS.find(x=>x.name===res.name):null;
   const isDH=t&&t.rank>(S.config.dh||20);
-  if(!res.name)return `<div style="min-height:42px;padding:7px 9px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:11px;font-style:italic">${res.label||'TBD'}</div>`;
-  return `<div style="min-height:42px;padding:6px 9px;display:flex;align-items:center;gap:6px;
+  if(!res.name&&!res.label) return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:10px;font-style:italic">TBD</div>`;
+  if(!res.name) return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:10px;font-style:italic">${res.label}</div>`;
+  return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;gap:5px;
     background:${isWin?'rgba(212,168,67,0.12)':'transparent'};
     border-left:${isWin?'3px solid var(--gold)':'3px solid transparent'}">
-    <span style="font-size:15px;flex-shrink:0">${res.flag||t?.flag||'🏳️'}</span>
+    <span style="font-size:13px">${res.flag||t?.flag||'🏳️'}</span>
     <div style="flex:1;min-width:0">
-      <div style="font-size:12px;font-weight:${isWin?700:500};color:${isWin?'var(--gold)':'var(--white)'};
+      <div style="font-size:11px;font-weight:${isWin?700:500};color:${isWin?'var(--gold)':'var(--white)'};
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.name}${isDH?' 🌶️':''}</div>
-      ${owner?`<div style="font-size:10px;color:var(--muted);margin-top:1px">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
+      ${owner?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
     </div>
-    ${isWin?'<span style="color:var(--gold);font-size:11px;flex-shrink:0">✓</span>':''}
+    ${isWin?'<span style="color:var(--gold);font-size:10px">✓</span>':''}
   </div>`;
 }
 
@@ -1094,10 +1072,10 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   const win=gv(id+'_winner');
   const hWin=win&&homeRes.name&&win===homeRes.name;
   const aWin=win&&awayRes.name&&win===awayRes.name;
-  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;width:190px;flex-shrink:0">
-    <div style="background:rgba(255,255,255,0.08);padding:3px 7px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-weight:800;font-size:10px;color:var(--white);font-family:'Barlow Condensed',sans-serif;letter-spacing:0.05em">M${mNum}</span>
-      <span style="font-size:9px;color:rgba(255,255,255,0.45)">${fmtDT(dtStr)} · ${venue}</span>
+  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:175px;flex-shrink:0">
+    <div style="background:rgba(255,255,255,0.07);padding:2px 6px;display:flex;justify-content:space-between;font-size:9px;color:var(--muted);letter-spacing:0.04em">
+      <span style="font-weight:800;color:var(--white)">M${mNum}</span>
+      <span>${fmtDT(dtStr)} · ${venue}</span>
     </div>
     ${teamRow(homeRes,hWin)}
     <div style="height:1px;background:var(--line)"></div>
@@ -1105,39 +1083,38 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   </div>`;
 }
 
-function hL(t,l,w){return `<div style="position:absolute;top:${t}px;left:${l}px;width:${w}px;height:1px;background:rgba(255,255,255,0.18)"></div>`;}
-function vL(t1,t2,x){return `<div style="position:absolute;top:${t1}px;left:${x}px;width:1px;height:${t2-t1}px;background:rgba(255,255,255,0.18)"></div>`;}
-function mL(t1,t2,x,w){const m=(t1+t2)/2;return `<div style="position:absolute;top:${m}px;left:${x}px;width:${w}px;height:1px;background:rgba(255,255,255,0.18)"></div>`;}
+function hLine(t,l,w){return `<div style="position:absolute;top:${t}px;left:${l}px;width:${w}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;}
+function vLine(t1,t2,x){return `<div style="position:absolute;top:${t1}px;left:${x}px;width:1px;height:${t2-t1}px;background:rgba(255,255,255,0.15)"></div>`;}
+function mLine(t1,t2,x,w){const m=(t1+t2)/2;return `<div style="position:absolute;top:${m}px;left:${x}px;width:${w}px;height:1px;background:rgba(255,255,255,0.15)"></div>`;}
 
 function renderBracket(){
   if(!S.bracket)S.bracket={};
   const st=groupStandings();
+
+  // Build all 3rd place teams ranked
   const thirds=[];
   ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
-    const t=st[g]?.[2];if(t)thirds.push({...t,group:g});
+    const t=st[g]?.[2];
+    if(t)thirds.push({...t,group:g});
   });
   thirds.sort((a,b)=>b.pts-a.pts||b.gDiff-a.gDiff||b.gf-a.gf||a.rank-b.rank);
   const thirdMap=buildThirdMap(thirds);
 
-  function rT(code){return resolveTeam(code,st,thirds,thirdMap);}
-  function wOf(id){return winnerOf(id);}
+  function res(code){return resolveSlot(code,st,thirds,thirdMap);}
+  function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  // Layout constants — increased spacing
-  const MH=94, GAP=10, U=MH+GAP;
+  const MH=76, GAP=5, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
-  const CW=190, CN=18, TW=1680, CX=TW/2;
-  const LR32=0, LR16=LR32+CW+CN, LQF=LR16+CW+CN, LSF=LQF+CW+CN;
+  const CW=175,CN=14,TW=1540,CX=TW/2;
+  const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
   const FIN=CX-CW/2;
-  const RSF=TW-LSF-CW, RQF=TW-LQF-CW, RR16=TW-LR16-CW, RR32=TW-LR32-CW;
-  const TH=8*U+300;
+  const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
+  const TH=8*U+240;
 
-  const hdr=(c,l,txt)=>`<div style="position:absolute;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:800;
-    letter-spacing:0.08em;color:${c};text-align:center;top:-28px;left:${l}px;width:${CW}px">${txt}</div>`;
+  const hdr=(c,l,txt)=>`<div style="position:absolute;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.08em;color:${c};text-align:center;top:-26px;left:${l}px;width:${CW}px">${txt}</div>`;
 
-  let h=`<div style="position:relative;width:${TW}px;height:${TH}px;margin-top:36px">`;
-
-  // Headers
+  let h=`<div style="position:relative;width:${TW}px;height:${TH}px;margin-top:32px">`;
   h+=hdr('#5a9e7a',LR32,'ROUND OF 32');
   h+=hdr('#5a7a9e',LR16,'ROUND OF 16');
   h+=hdr('#8a6a9e',LQF,'QUARTER-FINALS');
@@ -1148,124 +1125,142 @@ function renderBracket(){
   h+=hdr('#5a7a9e',RR16,'ROUND OF 16');
   h+=hdr('#5a9e7a',RR32,'ROUND OF 32');
 
-  function place(card,t,l){h+=`<div style="position:absolute;top:${t}px;left:${l}px">${card}</div>`;}
+  // Helper to place a card absolutely
+  function place(id,mNum,dt,v,hc,ac,t,l){
+    h+=`<div style="position:absolute;top:${t}px;left:${l}px">${mCard(id,mNum,dt,v,hc,ac)}</div>`;
+  }
 
-  // ── LEFT R32 (M73-M80) ────────────────────────────────
-  const LR32m=R32.slice(0,8);
+  // ── LEFT SIDE ──────────────────────────────────────────
+  // R32 left (M73-M80)
+  const LR32m=[R32[0],R32[1],R32[2],R32[3],R32[4],R32[5],R32[6],R32[7]];
   LR32m.forEach((m,i)=>{
-    place(mCard(m.id,m.m,m.dt,m.v,rT(m.hc),rT(m.ac)),top(0,i),LR32);
-    h+=hL(top(0,i)+MH/2,LR32+CW,CN);
+    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),LR32);
+    h+=hLine(top(0,i)+MH/2,LR32+CW,CN);
   });
-  // R32→R16 connectors + R16 left
-  // M90(W73+W75), M89(W74+W77), M91(W76+W78), M92(W79+W80)
-  const LR16m=[R16[1],R16[0],R16[2],R16[3]]; // 90,89,91,92 (pairs: 0+1→M90, 2+3→M89... wait)
-  // R32 pairs: (M73,M75)→M90, (M74,M77)→M89, (M76,M78)→M91, (M79,M80)→M92
-  // LR32m: [M73,M74,M75,M74...] — indices 0=M73,1=M74,2=M75,3=M76,4=M77,5=M78,6=M79,7=M80
-  // Pairs: (0,2)→M90, (1,4)→M89, (3,5)→M91, (6,7)→M92
-  const LPairs=[[0,2,R16[1]],[1,4,R16[0]],[3,5,R16[2]],[6,7,R16[3]]]; // [r32idx_a, r32idx_b, r16match]
-  LPairs.forEach(([a,b,r16m],i)=>{
-    const t1=top(0,a)+MH/2, t2=top(0,b)+MH/2;
-    h+=vL(t1,t2,LR32+CW+CN-1);
-    h+=mL(t1,t2,LR32+CW+CN-1,CN+1);
-    place(mCard(r16m.id,r16m.m,r16m.dt,r16m.v,wOf(LR32m[a].id),wOf(LR32m[b].id)),top(1,i),LR16);
-    h+=hL(top(1,i)+MH/2,LR16+CW,CN);
-  });
-  // R16→QF left: (M90,M89)→QF97@Boston, (M91,M92)→QF98@Dallas
-  // R16 indices in LPairs order: 0=M90(r16_2), 1=M89(r16_1), 2=M91(r16_3), 3=M92(r16_4)
-  const LQFm=[QF[0],QF[1]]; // QF97, QF98
-  [[0,1,QF[0]],[2,3,QF[1]]].forEach(([a,b,qfm],i)=>{
-    const t1=top(1,a)+MH/2, t2=top(1,b)+MH/2;
-    h+=vL(t1,t2,LR16+CW+CN-1);
-    h+=mL(t1,t2,LR16+CW+CN-1,CN+1);
-    const f1r16=LPairs[a][2], f2r16=LPairs[b][2];
-    place(mCard(qfm.id,qfm.m,qfm.dt,qfm.v,wOf(f1r16.id),wOf(f2r16.id)),top(2,i),LQF);
-    h+=hL(top(2,i)+MH/2,LQF+CW,CN);
-  });
-  // QF→SF left
-  {const t1=top(2,0)+MH/2, t2=top(2,1)+MH/2;
-  h+=vL(t1,t2,LQF+CW+CN-1);
-  h+=mL(t1,t2,LQF+CW+CN-1,CN+1);
-  place(mCard(SF[0].id,SF[0].m,SF[0].dt,SF[0].v,wOf(QF[0].id),wOf(QF[1].id)),top(3,0),LSF);
-  h+=hL(top(3,0)+MH/2,LSF+CW,FIN-(LSF+CW));}
+  // R32→R16 connectors + R16 left (M89,M90,M91,M92)
+  const LR16m=[R16[1],R16[0],R16[2],R16[3]]; // 89,90,91,92
+  for(let i=0;i<4;i++){
+    const t1=top(0,i*2)+MH/2,t2=top(0,i*2+1)+MH/2;
+    h+=vLine(t1,t2,LR32+CW+CN-1);
+    h+=mLine(t1,t2,LR32+CW+CN-1,CN+1);
+    const m=LR16m[i];
+    place(m.id,m.m,m.dt,m.v,winOf(LR32m[i*2].id),winOf(LR32m[i*2+1].id),top(1,i),LR16);
+    h+=hLine(top(1,i)+MH/2,LR16+CW,CN);
+  }
+  // R16→QF + QF left (QF1,QF2)
+  const LQFm=[QF[0],QF[1]];
+  for(let i=0;i<2;i++){
+    const t1=top(1,i*2)+MH/2,t2=top(1,i*2+1)+MH/2;
+    h+=vLine(t1,t2,LR16+CW+CN-1);
+    h+=mLine(t1,t2,LR16+CW+CN-1,CN+1);
+    const m=LQFm[i];
+    place(m.id,m.m,m.dt,m.v,winOf(LR16m[i*2].id),winOf(LR16m[i*2+1].id),top(2,i),LQF);
+    h+=hLine(top(2,i)+MH/2,LQF+CW,CN);
+  }
+  // QF→SF + SF1
+  {const t1=top(2,0)+MH/2,t2=top(2,1)+MH/2;
+  h+=vLine(t1,t2,LQF+CW+CN-1);
+  h+=mLine(t1,t2,LQF+CW+CN-1,CN+1);
+  place(SF[0].id,SF[0].m,SF[0].dt,SF[0].v,winOf(LQFm[0].id),winOf(LQFm[1].id),top(3,0),LSF);
+  h+=hLine(top(3,0)+MH/2,LSF+CW,FIN-(LSF+CW));}
 
-  // ── RIGHT R32 (M81-M88) ───────────────────────────────
-  const RR32m=R32.slice(8,16);
+  // ── RIGHT SIDE (mirror) ────────────────────────────────
+  const RR32m=[R32[8],R32[9],R32[10],R32[11],R32[12],R32[13],R32[14],R32[15]];
   RR32m.forEach((m,i)=>{
-    place(mCard(m.id,m.m,m.dt,m.v,rT(m.hc),rT(m.ac)),top(0,i),RR32);
-    h+=hL(top(0,i)+MH/2,RR32-CN,CN);
+    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),RR32);
+    h+=hLine(top(0,i)+MH/2,RR32-CN,CN);
   });
-  // R32→R16 right: (M81,M82)→M94@Seattle, (M83,M84)→M93@Dallas, (M85,M87)→M96@Vancouver, (M86,M88)→M95@Atlanta
-  // RR32m: 0=M81,1=M82,2=M83,3=M84,4=M85,5=M86,6=M87,7=M88
-  // Pairs: (0,1)→M94, (2,3)→M93, (4,6)→M96, (5,7)→M95
-  const RPairs=[[0,1,R16[5]],[2,3,R16[4]],[4,6,R16[6]],[5,7,R16[7]]];
-  RPairs.forEach(([a,b,r16m],i)=>{
-    const t1=top(0,a)+MH/2, t2=top(0,b)+MH/2;
-    h+=vL(t1,t2,RR32-CN);
-    h+=mL(t1,t2,RR32-CN,CN);
-    place(mCard(r16m.id,r16m.m,r16m.dt,r16m.v,wOf(RR32m[a].id),wOf(RR32m[b].id)),top(1,i),RR16);
-    h+=hL(top(1,i)+MH/2,RR16-CN,CN);
-  });
-  // R16→QF right: (M94,M93)→QF99@LA, (M96,M95)→QF100@Miami
-  [[0,1,QF[2]],[2,3,QF[3]]].forEach(([a,b,qfm],i)=>{
-    const t1=top(1,a)+MH/2, t2=top(1,b)+MH/2;
-    h+=vL(t1,t2,RR16-CN);
-    h+=mL(t1,t2,RR16-CN,CN);
-    const f1r16=RPairs[a][2], f2r16=RPairs[b][2];
-    place(mCard(qfm.id,qfm.m,qfm.dt,qfm.v,wOf(f1r16.id),wOf(f2r16.id)),top(2,i),RQF);
-    h+=hL(top(2,i)+MH/2,RQF-CN,CN);
-  });
-  // QF→SF right
-  {const t1=top(2,0)+MH/2, t2=top(2,1)+MH/2;
-  h+=vL(t1,t2,RQF-CN);
-  h+=mL(t1,t2,RQF-CN,CN);
-  place(mCard(SF[1].id,SF[1].m,SF[1].dt,SF[1].v,wOf(QF[2].id),wOf(QF[3].id)),top(3,0),RSF);
-  h+=hL(top(3,0)+MH/2,FIN+CW,RSF-(FIN+CW));}
+  const RR16m=[R16[4],R16[5],R16[6],R16[7]]; // 93,94,96,95
+  for(let i=0;i<4;i++){
+    const t1=top(0,i*2)+MH/2,t2=top(0,i*2+1)+MH/2;
+    h+=vLine(t1,t2,RR32-CN);
+    h+=mLine(t1,t2,RR32-CN,CN);
+    const m=RR16m[i];
+    place(m.id,m.m,m.dt,m.v,winOf(RR32m[i*2].id),winOf(RR32m[i*2+1].id),top(1,i),RR16);
+    h+=hLine(top(1,i)+MH/2,RR16-CN,CN);
+  }
+  const RQFm=[QF[2],QF[3]];
+  for(let i=0;i<2;i++){
+    const t1=top(1,i*2)+MH/2,t2=top(1,i*2+1)+MH/2;
+    h+=vLine(t1,t2,RR16-CN);
+    h+=mLine(t1,t2,RR16-CN,CN);
+    const m=RQFm[i];
+    place(m.id,m.m,m.dt,m.v,winOf(RR16m[i*2].id),winOf(RR16m[i*2+1].id),top(2,i),RQF);
+    h+=hLine(top(2,i)+MH/2,RQF-CN,CN);
+  }
+  {const t1=top(2,0)+MH/2,t2=top(2,1)+MH/2;
+  h+=vLine(t1,t2,RQF-CN);
+  h+=mLine(t1,t2,RQF-CN,CN);
+  place(SF[1].id,SF[1].m,SF[1].dt,SF[1].v,winOf(RQFm[0].id),winOf(RQFm[1].id),top(3,0),RSF);
+  h+=hLine(top(3,0)+MH/2,FIN+CW,RSF-(FIN+CW));}
 
-  // ── FINAL + CHAMPION + 3RD ────────────────────────────
+  // ── FINAL + CHAMPION + 3RD ─────────────────────────────
   const fTop=top(3,0);
-  place(mCard(FINAL_M.id,FINAL_M.m,FINAL_M.dt,FINAL_M.v,wOf(SF[0].id),wOf(SF[1].id)),fTop,FIN);
-
+  place(FINAL_M.id,FINAL_M.m,FINAL_M.dt,FINAL_M.v,winOf(SF[0].id),winOf(SF[1].id),fTop,FIN);
   const champion=gv('champion');
-  const champTop=fTop+MH+14;
+  const champTop=fTop+MH+10;
   h+=`<div style="position:absolute;top:${champTop}px;left:${FIN}px;width:${CW}px;
-    background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:12px;text-align:center">
-    ${champion
-      ?`<div style="font-size:24px">🏆</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--gold)">${champion}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">WORLD CHAMPION</div>
-        ${S.draft[champion]?`<div style="font-size:11px;color:#5a9e6a;margin-top:4px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}`
-      :`<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px">Champion TBD</div>`}
+    background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:10px;text-align:center">
+    ${champion?`<div style="font-size:22px">🏆</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold)">${champion}</div>
+      <div style="font-size:9px;color:var(--muted)">WORLD CHAMPION</div>
+      ${S.draft[champion]?`<div style="font-size:10px;color:#5a9e6a;margin-top:3px;font-weight:600">🎉 ${S.draft[champion]}</div>`:''}
+    `:`<div style="font-size:12px;color:var(--muted);font-style:italic;padding:8px">Champion TBD</div>`}
   </div>`;
-
-  const thirdTop=champTop+100;
+  const thirdTop=champTop+90;
   h+=`<div style="position:absolute;top:${thirdTop}px;left:${FIN}px;width:${CW}px;
     font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:800;color:#7a7a7a;
-    text-align:center;letter-spacing:0.06em">3RD PLACE</div>`;
-  place(mCard(THIRD_M.id,THIRD_M.m,THIRD_M.dt,THIRD_M.v,{label:'Loss M101'},{label:'Loss M102'}),thirdTop+18,FIN);
+    text-align:center;letter-spacing:0.06em;margin-bottom:4px">3RD PLACE</div>`;
+  // 3rd place teams are losers of SF
+  const sf1l=gv('sf_1_winner')?{label:'Loss M101'}:{label:'Loss M101'};
+  const sf2l=gv('sf_2_winner')?{label:'Loss M102'}:{label:'Loss M102'};
+  h+=`<div style="position:absolute;top:${thirdTop+18}px;left:${FIN}px">${mCard(THIRD_M.id,THIRD_M.m,THIRD_M.dt,THIRD_M.v,sf1l,sf2l)}</div>`;
 
   h+=`</div>`; // end bracket
 
-  // ── COMMISSIONER PANEL ────────────────────────────────
-  h+=`<div style="margin-top:28px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter Match Winners</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Teams auto-fill from group standings. Just enter winners as matches finish — bracket updates for everyone instantly.</div>
+  // ── COMMISSIONER PANEL ─────────────────────────────────
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+  h+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter KO Results</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Enter scores for each completed KO match. Winner auto-detects from score. Goals auto-add +2pts each to winning team's owner. Saves & syncs instantly.</div>
     <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px">
-      ${ALL_IDS.map(m=>{
-        const home=gv(m.id+'_home')||gv(m.id+'_away')?gv(m.id+'_home')||'TBD':'TBD';
-        const away=gv(m.id+'_away')||'TBD';
-        return `<div style="background:var(--card2);border-radius:7px;padding:9px">
-          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:2px;font-family:'Barlow Condensed',sans-serif">M${m.m} · ${m.v} · ${fmtDT(m.dt)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${home} vs ${away}</div>
-          <input type="text" id="b_${m.id}_winner" value="${gv(m.id+'_winner')}" placeholder="Winner..." list="team-dl"
-            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;
-            color:var(--gold);font-size:11px;padding:5px 7px;outline:none;box-sizing:border-box">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
+      ${allM.map(m=>{
+        const hTeam=gv(m.id+'_home')||'Home';
+        const aTeam=gv(m.id+'_away')||'Away';
+        const hg=gv(m.id+'_hg');
+        const ag=gv(m.id+'_ag');
+        const winner=gv(m.id+'_winner');
+        const pen=gv(m.id+'_pen')==='1';
+        return `<div style="background:var(--card2);border-radius:7px;padding:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:3px;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.04em">M${m.m} · ${fmtDT(m.dt)} · ${m.v}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <div style="flex:1;font-size:11px;color:var(--white);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hTeam}</div>
+            <input type="number" id="b_${m.id}_hg" value="${hg}" min="0" placeholder="-"
+              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:13px;font-weight:700;padding:3px;text-align:center;outline:none">
+            <span style="color:var(--muted);font-size:11px">:</span>
+            <input type="number" id="b_${m.id}_ag" value="${ag}" min="0" placeholder="-"
+              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:13px;font-weight:700;padding:3px;text-align:center;outline:none">
+            <div style="flex:1;font-size:11px;color:var(--white);font-weight:500;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${aTeam}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1">
+              <div style="font-size:9px;color:var(--muted);margin-bottom:2px">WINNER (if pens)</div>
+              <input type="text" id="b_${m.id}_winner" value="${winner}" placeholder="Auto or override..." list="team-dl"
+                style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;
+                color:var(--gold);font-size:10px;padding:3px 5px;outline:none;box-sizing:border-box">
+            </div>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--muted);white-space:nowrap">
+              <input type="checkbox" id="b_${m.id}_pen" ${pen?'checked':''} style="accent-color:var(--gold)"> Pens
+            </label>
+          </div>
         </div>`;
       }).join('')}
     </div>
-    <div style="margin-top:14px;display:flex;gap:8px">
-      <button class="btn btn-gold" onclick="saveBracket()">💾 Save Winners</button>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-gold" onclick="saveBracket()">💾 Save KO Results</button>
       <button class="btn btn-ghost" onclick="renderBracket()">🔄 Refresh</button>
+      <span style="font-size:11px;color:var(--muted)">Goals auto-award +2pts · Pens auto-award +5pts · Scores determine winner unless overridden</span>
     </div>
   </div>`;
 
@@ -1274,15 +1269,64 @@ function renderBracket(){
 
 function saveBracket(){
   if(!S.bracket)S.bracket={};
-  ALL_IDS.forEach(m=>{
-    const w=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
-    if(w)S.bracket[m.id+'_winner']=w;
-    else delete S.bracket[m.id+'_winner'];
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+
+  // Save scores, winners, pen flags
+  allM.forEach(m=>{
+    const hg=document.getElementById(`b_${m.id}_hg`)?.value;
+    const ag=document.getElementById(`b_${m.id}_ag`)?.value;
+    const pen=document.getElementById(`b_${m.id}_pen`)?.checked;
+    const manualWinner=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
+    const home=gv(m.id+'_home'), away=gv(m.id+'_away');
+
+    if(hg!==''&&hg!=null)S.bracket[m.id+'_hg']=hg;
+    if(ag!==''&&ag!=null)S.bracket[m.id+'_ag']=ag;
+    S.bracket[m.id+'_pen']=pen?'1':'0';
+
+    // Auto-determine winner from score if not manually overridden
+    if(manualWinner){
+      S.bracket[m.id+'_winner']=manualWinner;
+    } else if(hg!==''&&ag!==''&&hg!=null&&ag!=null){
+      const h=parseInt(hg),a=parseInt(ag);
+      if(h>a&&home)S.bracket[m.id+'_winner']=home;
+      else if(a>h&&away)S.bracket[m.id+'_winner']=away;
+      // tied score with no override = pending (pens not decided yet)
+    } else {
+      delete S.bracket[m.id+'_winner'];
+    }
   });
+
   S.bracket.champion=S.bracket['final_winner']||'';
+
+  // ── AUTO-CALCULATE KO GOALS PER TEAM ──────────────────
+  // Tally goals scored in KO rounds per team, add pen win bonus
+  const koGoalMap={}, penWinMap={};
+  allM.forEach(m=>{
+    const hg=parseInt(S.bracket[m.id+'_hg']||'');
+    const ag=parseInt(S.bracket[m.id+'_ag']||'');
+    const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
+    const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
+    const winner=S.bracket[m.id+'_winner'];
+    const pen=S.bracket[m.id+'_pen']==='1';
+    if(!isNaN(hg)&&home){koGoalMap[home]=(koGoalMap[home]||0)+hg;}
+    if(!isNaN(ag)&&away){koGoalMap[away]=(koGoalMap[away]||0)+ag;}
+    if(pen&&winner){penWinMap[winner]=(penWinMap[winner]||0)+1;}
+  });
+
+  // Update teamStats with KO goals and pen wins
+  // Only update if we have data — don't wipe manually set values
+  Object.keys(koGoalMap).forEach(teamName=>{
+    if(!S.teamStats[teamName])S.teamStats[teamName]={};
+    S.teamStats[teamName].koGoals=koGoalMap[teamName];
+  });
+  Object.keys(penWinMap).forEach(teamName=>{
+    if(!S.teamStats[teamName])S.teamStats[teamName]={};
+    S.teamStats[teamName].penWin=penWinMap[teamName];
+  });
+
   saveLocal();syncWrite();
   renderBracket();
-  toast('🏆 Bracket saved & synced ✓');
+  toast('🏆 KO results saved & synced ✓');
 }
 
 
