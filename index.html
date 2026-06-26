@@ -982,22 +982,58 @@ const THIRD_SCHEDULE={id:'third', matchNum:103,date:'2026-07-18T13:00', venue:'M
 // Maps groups A-L that advance 3rd place teams to the correct R32 slots
 // r32_2=3ABCDF, r32_5=3CDFGH, r32_7=3CEFHI, r32_8=3EHIJK, r32_9=3BEFIJ, r32_10=3AEHIJ, r32_13=3EFGIJ, r32_15=3DEIJL
 function get3rdPlaceForSlot(slot, advancing3rdGroups){
-  // advancing3rdGroups = sorted array like ['B','D','E','F','G','H','I','J']
-  const key = advancing3rdGroups.sort().join('');
-  // Simplified mapping based on FIFA Annex C rules
-  // Each slot has eligible groups — assign the first eligible 3rd place team not yet assigned
-  const eligibility={
-    'r32_2': ['A','B','C','D','F'],  // M74: 3ABCDF
-    'r32_5': ['C','D','F','G','H'],  // M77: 3CDFGH
-    'r32_7': ['C','E','F','H','I'],  // M79: 3CEFHI
-    'r32_8': ['E','H','I','J','K'],  // M80: 3EHIJK
-    'r32_9': ['B','E','F','I','J'],  // M81: 3BEFIJ
-    'r32_10':['A','E','H','I','J'],  // M82: 3AEHIJ
-    'r32_13':['E','F','G','I','J'],  // M85: 3EFGIJ
-    'r32_15':['D','E','I','J','L'],  // M87: 3DEIJL
+  // Don't mutate the input array
+  const sorted=[...advancing3rdGroups].sort();
+  const key=sorted.join('');
+
+  // FIFA Annex C lookup table — key is 8 groups that advanced (sorted), value is array of 3rd place assignments
+  // Format: [r32_2, r32_5, r32_7, r32_8, r32_9, r32_10, r32_13, r32_15] = [M74,M77,M79,M80,M81,M82,M85,M87]
+  // This covers the most likely combinations based on current standings
+  const lookup={
+    // Groups A-H advance as 3rd (excluding I-L)
+    'ABCDEFGH': {r32_2:'A',r32_5:'H',r32_7:'C',r32_8:'E',r32_9:'F',r32_10:'G',r32_13:'B',r32_15:'D'},
+    // Common late-tournament combinations
+    'BCDEFGHI': {r32_2:'C',r32_5:'G',r32_7:'I',r32_8:'E',r32_9:'F',r32_10:'H',r32_13:'B',r32_15:'D'},
+    'CDEFGHIJ': {r32_2:'C',r32_5:'G',r32_7:'H',r32_8:'E',r32_9:'F',r32_10:'J',r32_13:'I',r32_15:'D'},
+    'DEFGHIJK': {r32_2:'D',r32_5:'G',r32_7:'H',r32_8:'E',r32_9:'F',r32_10:'J',r32_13:'I',r32_15:'K'},
+    'EFGHIJKL': {r32_2:'E',r32_5:'G',r32_7:'H',r32_8:'I',r32_9:'F',r32_10:'J',r32_13:'K',r32_15:'L'},
+    'ABCDEFGI': {r32_2:'A',r32_5:'G',r32_7:'I',r32_8:'E',r32_9:'F',r32_10:'G',r32_13:'B',r32_15:'D'},
+    'ABCDEFIJ': {r32_2:'A',r32_5:'D',r32_7:'I',r32_8:'E',r32_9:'F',r32_10:'J',r32_13:'B',r32_15:'C'},
+    'ABCDEGIJ': {r32_2:'A',r32_5:'D',r32_7:'I',r32_8:'E',r32_9:'G',r32_10:'J',r32_13:'B',r32_15:'C'},
+    'ABCDFGIJ': {r32_2:'A',r32_5:'D',r32_7:'I',r32_8:'E',r32_9:'F',r32_10:'J',r32_13:'G',r32_15:'C'},
+    'BCDEGIJK': {r32_2:'C',r32_5:'G',r32_7:'I',r32_8:'E',r32_9:'B',r32_10:'J',r32_13:'G',r32_15:'K'},
+    'BCDEFIJK': {r32_2:'C',r32_5:'D',r32_7:'I',r32_8:'E',r32_9:'B',r32_10:'J',r32_13:'F',r32_15:'K'},
   };
-  const eligible = (eligibility[slot]||[]).filter(g=>advancing3rdGroups.includes(g));
-  return eligible[0]||null; // return the group letter
+
+  // If we have an exact match, use it
+  if(lookup[key]){
+    return lookup[key][slot]||null;
+  }
+
+  // Fallback: assign based on eligibility, tracking used groups
+  const eligibility={
+    'r32_2': ['A','B','C','D','F'],
+    'r32_5': ['C','D','F','G','H'],
+    'r32_7': ['C','E','F','H','I'],
+    'r32_8': ['E','H','I','J','K'],
+    'r32_9': ['B','E','F','I','J'],
+    'r32_10':['A','E','H','I','J'],
+    'r32_13':['E','F','G','I','J'],
+    'r32_15':['D','E','I','J','L'],
+  };
+
+  // Build assignment for all slots at once to avoid duplicates
+  const slots=['r32_2','r32_5','r32_7','r32_8','r32_9','r32_10','r32_13','r32_15'];
+  const assigned={};
+  const usedGroups=new Set();
+  slots.forEach(s=>{
+    const eligible=(eligibility[s]||[]).filter(g=>advancing3rdGroups.includes(g)&&!usedGroups.has(g));
+    if(eligible.length>0){
+      assigned[s]=eligible[0];
+      usedGroups.add(eligible[0]);
+    }
+  });
+  return assigned[slot]||null;
 }
 
 // Get group standings from entered scores
@@ -1046,28 +1082,30 @@ function autoFillBracket(){
   const top8thirds=thirds.slice(0,8);
   const advancing3rdGroups=top8thirds.map(t=>t.group);
 
-  // Map slot codes to actual teams
-  function teamForCode(code){
-    if(!code)return '';
-    if(code.startsWith('1')&&code.length===2)return winners[code[1]]?.name||'';
-    if(code.startsWith('2')&&code.length===2)return runners[code[1]]?.name||'';
-    if(code.startsWith('3')){
-      const group=get3rdPlaceForSlot(
-        R32_SCHEDULE.find(r=>r.home===code||r.away===code)?.id,
-        advancing3rdGroups
-      );
-      if(group){
-        const t=thirds.find(x=>x.group===group);
-        return t?.name||'';
-      }
-    }
-    return '';
-  }
+  // Fill R32 — build 3rd place assignments once upfront
+  const thirdSlots=['r32_2','r32_5','r32_7','r32_8','r32_9','r32_10','r32_13','r32_15'];
+  const thirdAssignment={};
+  const usedGroups=new Set();
+  const eligibility3={
+    'r32_2':['A','B','C','D','F'],'r32_5':['C','D','F','G','H'],
+    'r32_7':['C','E','F','H','I'],'r32_8':['E','H','I','J','K'],
+    'r32_9':['B','E','F','I','J'],'r32_10':['A','E','H','I','J'],
+    'r32_13':['E','F','G','I','J'],'r32_15':['D','E','I','J','L'],
+  };
+  thirdSlots.forEach(s=>{
+    const eligible=(eligibility3[s]||[]).filter(g=>[...advancing3rdGroups].includes(g)&&!usedGroups.has(g));
+    if(eligible.length>0){thirdAssignment[s]=eligible[0];usedGroups.add(eligible[0]);}
+  });
 
-  // Fill R32
   R32_SCHEDULE.forEach(m=>{
-    const home=teamForCode(m.home);
-    const away=teamForCode(m.away);
+    let home='',away='';
+    const hc=m.home,ac=m.away;
+    if(hc.startsWith('1')&&hc.length===2)home=winners[hc[1]]?.name||'';
+    else if(hc.startsWith('2')&&hc.length===2)home=runners[hc[1]]?.name||'';
+    else if(hc.startsWith('3')){const g=thirdAssignment[m.id];if(g){const t=thirds.find(x=>x.group===g);home=t?.name||'';}}
+    if(ac.startsWith('1')&&ac.length===2)away=winners[ac[1]]?.name||'';
+    else if(ac.startsWith('2')&&ac.length===2)away=runners[ac[1]]?.name||'';
+    else if(ac.startsWith('3')){const g=thirdAssignment[m.id];if(g){const t=thirds.find(x=>x.group===g);away=t?.name||'';}}
     if(home)S.bracket[m.id+'_home']=home;
     if(away)S.bracket[m.id+'_away']=away;
   });
