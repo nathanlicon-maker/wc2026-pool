@@ -1053,12 +1053,12 @@ function teamRow(res,isWin){
   const pts=res.name&&owner?calcTeamPts(res.name):null;
   const t=res.name?TEAMS.find(x=>x.name===res.name):null;
   const isDH=t&&t.rank>(S.config.dh||20);
-  if(!res.name&&!res.label) return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:10px;font-style:italic">TBD</div>`;
-  if(!res.name) return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:10px;font-style:italic">${res.label}</div>`;
-  return `<div style="min-height:32px;padding:4px 7px;display:flex;align-items:center;gap:5px;
+  if(!res.name&&!res.label) return `<div style="min-height:28px;padding:3px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.2);font-size:10px;font-style:italic">TBD</div>`;
+  if(!res.name) return `<div style="min-height:28px;padding:3px 7px;display:flex;align-items:center;color:rgba(255,255,255,0.25);font-size:10px;font-style:italic">${res.label}</div>`;
+  return `<div style="min-height:28px;padding:3px 7px;display:flex;align-items:center;gap:4px;
     background:${isWin?'rgba(212,168,67,0.12)':'transparent'};
     border-left:${isWin?'3px solid var(--gold)':'3px solid transparent'}">
-    <span style="font-size:13px">${res.flag||t?.flag||'🏳️'}</span>
+    <span style="font-size:12px">${res.flag||t?.flag||'🏳️'}</span>
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;font-weight:${isWin?700:500};color:${isWin?'var(--gold)':'var(--white)'};
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.name}${isDH?' 🌶️':''}</div>
@@ -1072,7 +1072,7 @@ function mCard(id,mNum,dtStr,venue,homeRes,awayRes){
   const win=gv(id+'_winner');
   const hWin=win&&homeRes.name&&win===homeRes.name;
   const aWin=win&&awayRes.name&&win===awayRes.name;
-  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:175px;flex-shrink:0">
+  return `<div style="background:var(--card);border:1px solid var(--line);border-radius:7px;overflow:hidden;width:162px;flex-shrink:0">
     <div style="background:rgba(255,255,255,0.07);padding:2px 6px;display:flex;justify-content:space-between;font-size:9px;color:var(--muted);letter-spacing:0.04em">
       <span style="font-weight:800;color:var(--white)">M${mNum}</span>
       <span>${fmtDT(dtStr)} · ${venue}</span>
@@ -1103,10 +1103,10 @@ function renderBracket(){
   function res(code){return resolveSlot(code,st,thirds,thirdMap);}
   function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  const MH=76, GAP=5, U=MH+GAP;
+  const MH=68, GAP=8, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
-  const CW=175,CN=14,TW=1540,CX=TW/2;
+  const CW=162,CN=14,TW=1420,CX=TW/2;
   const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
   const FIN=CX-CW/2;
   const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
@@ -1221,46 +1221,25 @@ function renderBracket(){
   // ── COMMISSIONER PANEL ─────────────────────────────────
   const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
   h+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter KO Results</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Enter scores for each completed KO match. Winner auto-detects from score. Goals auto-add +2pts each to winning team's owner. Saves & syncs instantly.</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter Match Winners</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Teams auto-fill from group standings. Enter the winner of each completed match. Bracket updates for everyone instantly.</div>
     <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
       ${allM.map(m=>{
-        const hTeam=gv(m.id+'_home')||'Home';
-        const aTeam=gv(m.id+'_away')||'Away';
-        const hg=gv(m.id+'_hg');
-        const ag=gv(m.id+'_ag');
-        const winner=gv(m.id+'_winner');
-        const pen=gv(m.id+'_pen')==='1';
-        return `<div style="background:var(--card2);border-radius:7px;padding:10px">
-          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:3px;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.04em">M${m.m} · ${fmtDT(m.dt)} · ${m.v}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-            <div style="flex:1;font-size:11px;color:var(--white);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hTeam}</div>
-            <input type="number" id="b_${m.id}_hg" value="${hg}" min="0" placeholder="-"
-              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:13px;font-weight:700;padding:3px;text-align:center;outline:none">
-            <span style="color:var(--muted);font-size:11px">:</span>
-            <input type="number" id="b_${m.id}_ag" value="${ag}" min="0" placeholder="-"
-              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:13px;font-weight:700;padding:3px;text-align:center;outline:none">
-            <div style="flex:1;font-size:11px;color:var(--white);font-weight:500;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${aTeam}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1">
-              <div style="font-size:9px;color:var(--muted);margin-bottom:2px">WINNER (if pens)</div>
-              <input type="text" id="b_${m.id}_winner" value="${winner}" placeholder="Auto or override..." list="team-dl"
-                style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;
-                color:var(--gold);font-size:10px;padding:3px 5px;outline:none;box-sizing:border-box">
-            </div>
-            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--muted);white-space:nowrap">
-              <input type="checkbox" id="b_${m.id}_pen" ${pen?'checked':''} style="accent-color:var(--gold)"> Pens
-            </label>
-          </div>
+        const home=gv(m.id+'_home')||'TBD', away=gv(m.id+'_away')||'TBD';
+        const dt=m.dt?fmtDT(m.dt):'';
+        return `<div style="background:var(--card2);border-radius:7px;padding:9px">
+          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:2px">M${m.m} · ${dt}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${home} vs ${away}</div>
+          <input type="text" id="b_${m.id}_winner" value="${gv(m.id+'_winner')}" placeholder="Winner..." list="team-dl"
+            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;
+            color:var(--gold);font-size:11px;padding:4px 6px;outline:none;box-sizing:border-box">
         </div>`;
       }).join('')}
     </div>
-    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-gold" onclick="saveBracket()">💾 Save KO Results</button>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-gold" onclick="saveBracket()">💾 Save Winners</button>
       <button class="btn btn-ghost" onclick="renderBracket()">🔄 Refresh</button>
-      <span style="font-size:11px;color:var(--muted)">Goals auto-award +2pts · Pens auto-award +5pts · Scores determine winner unless overridden</span>
     </div>
   </div>`;
 
@@ -1269,64 +1248,15 @@ function renderBracket(){
 
 function saveBracket(){
   if(!S.bracket)S.bracket={};
-  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
-
-  // Save scores, winners, pen flags
-  allM.forEach(m=>{
-    const hg=document.getElementById(`b_${m.id}_hg`)?.value;
-    const ag=document.getElementById(`b_${m.id}_ag`)?.value;
-    const pen=document.getElementById(`b_${m.id}_pen`)?.checked;
-    const manualWinner=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
-    const home=gv(m.id+'_home'), away=gv(m.id+'_away');
-
-    if(hg!==''&&hg!=null)S.bracket[m.id+'_hg']=hg;
-    if(ag!==''&&ag!=null)S.bracket[m.id+'_ag']=ag;
-    S.bracket[m.id+'_pen']=pen?'1':'0';
-
-    // Auto-determine winner from score if not manually overridden
-    if(manualWinner){
-      S.bracket[m.id+'_winner']=manualWinner;
-    } else if(hg!==''&&ag!==''&&hg!=null&&ag!=null){
-      const h=parseInt(hg),a=parseInt(ag);
-      if(h>a&&home)S.bracket[m.id+'_winner']=home;
-      else if(a>h&&away)S.bracket[m.id+'_winner']=away;
-      // tied score with no override = pending (pens not decided yet)
-    } else {
-      delete S.bracket[m.id+'_winner'];
-    }
+  [...R32,...R16,...QF,...SF,FINAL_M,THIRD_M].forEach(m=>{
+    const w=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
+    if(w)S.bracket[m.id+'_winner']=w;
+    else delete S.bracket[m.id+'_winner'];
   });
-
   S.bracket.champion=S.bracket['final_winner']||'';
-
-  // ── AUTO-CALCULATE KO GOALS PER TEAM ──────────────────
-  // Tally goals scored in KO rounds per team, add pen win bonus
-  const koGoalMap={}, penWinMap={};
-  allM.forEach(m=>{
-    const hg=parseInt(S.bracket[m.id+'_hg']||'');
-    const ag=parseInt(S.bracket[m.id+'_ag']||'');
-    const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
-    const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
-    const winner=S.bracket[m.id+'_winner'];
-    const pen=S.bracket[m.id+'_pen']==='1';
-    if(!isNaN(hg)&&home){koGoalMap[home]=(koGoalMap[home]||0)+hg;}
-    if(!isNaN(ag)&&away){koGoalMap[away]=(koGoalMap[away]||0)+ag;}
-    if(pen&&winner){penWinMap[winner]=(penWinMap[winner]||0)+1;}
-  });
-
-  // Update teamStats with KO goals and pen wins
-  // Only update if we have data — don't wipe manually set values
-  Object.keys(koGoalMap).forEach(teamName=>{
-    if(!S.teamStats[teamName])S.teamStats[teamName]={};
-    S.teamStats[teamName].koGoals=koGoalMap[teamName];
-  });
-  Object.keys(penWinMap).forEach(teamName=>{
-    if(!S.teamStats[teamName])S.teamStats[teamName]={};
-    S.teamStats[teamName].penWin=penWinMap[teamName];
-  });
-
   saveLocal();syncWrite();
   renderBracket();
-  toast('🏆 KO results saved & synced ✓');
+  toast('🏆 Bracket saved & synced ✓');
 }
 
 
