@@ -383,8 +383,6 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <!-- BRACKET -->
 <div id="pane-bracket" class="pane">
   <div class="section-title">🏆 Knockout Bracket <small>R32 → R16 → QF → SF → Final</small></div>
-  <div style="background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--muted)">
-    Group stage ends June 27. Fill in teams below as they qualify. Bracket syncs to everyone instantly.
   </div>
   <div id="bracket-container" style="overflow-x:auto;padding-bottom:20px"></div>
 </div>
@@ -1241,7 +1239,7 @@ function renderBracket(){
     return {name:'',label:'TBD'};
   }
 
-  h+=`<div style="margin-top:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+  h+=`<div style="margin-top:0px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter KO Scores</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:14px">
       Enter score for each completed match. Winner auto-detects from score.
