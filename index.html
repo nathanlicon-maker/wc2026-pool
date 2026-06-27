@@ -1320,7 +1320,7 @@ function renderBracket(){
 
   document.getElementById('bracket-container').innerHTML=h;
 }
-
+const UNLOCK_PIN = '1994';
 function unlockKO(){
   const pin=document.getElementById('ko-pin-input')?.value.trim();
   if(pin===UNLOCK_PIN){
@@ -1875,7 +1875,6 @@ function renderStandings(){
 // ═══════════════════════════════════════════════════════════════════
 // DRAFT LOCK
 // ═══════════════════════════════════════════════════════════════════
-const UNLOCK_PIN = '1994';  // Change this to your own PIN
 
 function lockDraft(){
   if(S.draftLocked){toast('Already locked.');return;}
