@@ -849,11 +849,19 @@ function renderDailyRecap(){
         const sc=S.scores[m.id]||{};
         if(sc.hg===''||sc.hg==null)return;
         const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
+        const isHome=m.home===t.name;
+        const gf=isHome?hg:ag;
+        const ga=isHome?ag:hg;
         const isDH=t.rank>(S.config.dh||20);
         const mult=isDH?1.5:1;
-      const teamPts=calcTeamPts(t.name);
-        pts+=teamPts;
-        teamsPlayed.push({team:t,pts:teamPts,m});
+        // Calculate points from THIS match only
+        const win=gf>ga,draw=gf===ga,loss=gf<ga;
+        const cs=ga===0?1:0;
+        const posMatchPts=(win?5:draw?2:0)+gf+cs*3;
+        const negMatchPts=loss?-1:0;
+        const matchPts=Math.round((posMatchPts*mult+negMatchPts)*10)/10;
+        pts+=matchPts;
+        teamsPlayed.push({team:t,pts:matchPts,m});
       });
     });
     return{name:p,pts:Math.round(pts*10)/10,teamsPlayed};
