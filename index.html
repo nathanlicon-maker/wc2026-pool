@@ -2100,6 +2100,16 @@ function renderAdmin(){
             <option value="0"${!ts.penWin?' selected':''}>No</option>
             <option value="1"${ts.penWin?' selected':''}>Yes +5</option>
           </select></div>
+        <div><div style="font-size:10px;color:var(--gold);margin-bottom:3px">🥇 Top of Group?</div>
+          <select id="gtop-${k}" class="draft-select" style="font-size:11px;border-color:rgba(212,168,67,0.3)">
+            <option value="0"${!ts.groupTop?' selected':''}>No</option>
+            <option value="1"${ts.groupTop?' selected':''}>Yes +12</option>
+          </select></div>
+        <div><div style="font-size:10px;color:var(--coral);margin-bottom:3px">🚪 Group Exit?</div>
+          <select id="gext-${k}" class="draft-select" style="font-size:11px;border-color:rgba(255,75,43,0.3)">
+            <option value="0"${!ts.groupExit?' selected':''}>No</option>
+            <option value="1"${ts.groupExit?' selected':''}>Yes −5</option>
+          </select></div>
       </div>
     </div>`;
   }).join('');
@@ -2124,6 +2134,8 @@ function saveKO(){
     ts.koGoals=parseInt(document.getElementById(`kog-${k}`)?.value)||0;
     ts.bonus=parseInt(document.getElementById(`bon-${k}`)?.value)||0;
     ts.penWin=parseInt(document.getElementById(`pen-${k}`)?.value)||0;
+    ts.groupTop=parseInt(document.getElementById(`gtop-${k}`)?.value)||0;
+    ts.groupExit=parseInt(document.getElementById(`gext-${k}`)?.value)||0;
     // Cascade wins
     ts.r32=0;ts.r16=0;ts.qf=0;ts.sf=0;
     if(['R32','R16','QF','SF','RU','W'].includes(fin))ts.r32=1;
