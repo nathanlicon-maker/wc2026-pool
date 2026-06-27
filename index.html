@@ -216,7 +216,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
   <button class="tab-btn" data-tab="bracket"     onclick="showTab('bracket',this)">🏆 Bracket</button>
   <button class="tab-btn" data-tab="power"       onclick="showTab('power',this)">⚡ Power Rankings</button>
   <button class="tab-btn" data-tab="standings"   onclick="showTab('standings',this)">📋 Teams</button>
-  <button class="tab-btn" data-tab="draft"       onclick="showTab('draft',this)">🌍 Draft</button>
+  <button class="tab-btn" data-tab="draft" onclick="showTab('draft',this)" style="display:none">🌍 Draft</button>
   <button class="tab-btn" data-tab="rules"       onclick="showTab('rules',this)">📖 Rules</button>
   <button class="tab-btn" data-tab="admin"       onclick="showTab('admin',this)">⚙️ Setup</button>
   <button class="tab-btn" data-tab="feedback"    onclick="showTab('feedback',this)">💬 Feedback</button>
@@ -1225,6 +1225,7 @@ function renderBracket(){
 
   // ── COMMISSIONER PANEL ─────────────────────────────────
   const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+  const koUnlocked=sessionStorage.getItem('koUnlocked')==='1';
 
   // Resolve team for commissioner panel — uses group standings for R32, saved winners for later rounds
   function panelTeam(id,side){
@@ -1239,8 +1240,25 @@ function renderBracket(){
     return {name:'',label:'TBD'};
   }
 
-  h+=`<div style="margin-top:0px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter KO Scores</div>
+  if(!koUnlocked){
+    h+=`<div style="margin-top:0px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:24px;text-align:center">
+      <div style="font-size:28px;margin-bottom:8px">🔒</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:6px">Commissioner: Enter KO Scores</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Enter your commissioner PIN to input and save KO match results.</div>
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center">
+        <input type="password" id="ko-pin-input" placeholder="Enter PIN..." maxlength="10"
+          style="background:var(--card2);border:1px solid var(--line);border-radius:6px;color:var(--white);
+          font-size:14px;padding:8px 12px;outline:none;width:150px;text-align:center"
+          onkeydown="if(event.key==='Enter')unlockKO()">
+        <button class="btn btn-gold" onclick="unlockKO()">🔓 Unlock</button>
+      </div>
+    </div>`;
+  } else {
+    h+=`<div style="margin-top:0px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold)">✏️ Commissioner: Enter KO Scores</div>
+      <button onclick="sessionStorage.removeItem('koUnlocked');renderBracket()" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer">🔒 Lock</button>
+    </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:14px">
       Enter score for each completed match. Winner auto-detects from score.
       Tick <strong style="color:var(--white)">🥅 Pens</strong> if it went to penalties and enter the winner manually.
@@ -1296,8 +1314,21 @@ function renderBracket(){
       <button class="btn btn-ghost" onclick="renderBracket()">🔄 Refresh</button>
     </div>
   </div>`;
+  }
 
   document.getElementById('bracket-container').innerHTML=h;
+}
+
+function unlockKO(){
+  const pin=document.getElementById('ko-pin-input')?.value.trim();
+  if(pin===UNLOCK_PIN){
+    sessionStorage.setItem('koUnlocked','1');
+    renderBracket();
+  } else {
+    toast('❌ Incorrect PIN');
+    document.getElementById('ko-pin-input').value='';
+    document.getElementById('ko-pin-input').focus();
+  }
 }
 
 function saveBracket(){
