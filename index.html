@@ -931,58 +931,53 @@ function submitFeedback(){
 
 // Official R32 fixtures per FIFA regulations
 const R32=[
-  // LEFT SIDE (M73-M80) — times in CDT (ET-1hr)
-  {id:'r32_1', m:73, dt:'2026-06-28T14:00', v:'Los Angeles',   hc:'2A',    ac:'2B'},
-  {id:'r32_2', m:74, dt:'2026-06-28T21:30', v:'Boston',        hc:'1E',    ac:'3ABCDF'},
-  {id:'r32_3', m:75, dt:'2026-06-29T12:00', v:'Houston',       hc:'1C',    ac:'2F'},
-  {id:'r32_4', m:76, dt:'2026-06-29T16:00', v:'New York/NJ',   hc:'1C',    ac:'2F'},
-  {id:'r32_5', m:77, dt:'2026-06-29T20:00', v:'New York/NJ',   hc:'1I',    ac:'3CDFGH'},
-  {id:'r32_6', m:78, dt:'2026-06-30T16:00', v:'Dallas',        hc:'2E',    ac:'2I'},
-  {id:'r32_7', m:79, dt:'2026-06-30T20:00', v:'Mexico City',   hc:'1A',    ac:'3CEFHI'},
-  {id:'r32_8', m:80, dt:'2026-07-01T11:00', v:'Atlanta',       hc:'1L',    ac:'3EHIJK'},
-  // RIGHT SIDE (M81-M88)
-  {id:'r32_9', m:81, dt:'2026-07-01T19:00', v:'San Francisco', hc:'1D',    ac:'3BEFIJ'},
-  {id:'r32_10',m:82, dt:'2026-07-01T15:00', v:'Seattle',       hc:'1G',    ac:'3AEHIJ'},
-  {id:'r32_11',m:83, dt:'2026-07-02T18:00', v:'Toronto',       hc:'2K',    ac:'2L'},
-  {id:'r32_12',m:84, dt:'2026-07-02T14:00', v:'Los Angeles',   hc:'1H',    ac:'2J'},
-  {id:'r32_13',m:85, dt:'2026-07-02T21:00', v:'Vancouver',     hc:'1B',    ac:'3EFGIJ'},
-  {id:'r32_14',m:86, dt:'2026-07-03T17:00', v:'Miami',         hc:'1J',    ac:'2H'},
-  {id:'r32_15',m:87, dt:'2026-07-03T20:30', v:'Kansas City',   hc:'1K',    ac:'3DEIJL'},
-  {id:'r32_16',m:88, dt:'2026-07-03T13:00', v:'Dallas',        hc:'2D',    ac:'2G'},
+  // LEFT SIDE — visual order top to bottom (matches how they appear in bracket)
+  {id:'r32_l1',m:74, dt:'2026-06-28T21:30',v:'Boston',        hc:'1E',    ac:'3ABCDF'},
+  {id:'r32_l2',m:77, dt:'2026-06-29T20:00',v:'New York/NJ',   hc:'1I',    ac:'3CDFGH'},
+  {id:'r32_l3',m:73, dt:'2026-06-28T14:00',v:'Los Angeles',   hc:'2A',    ac:'2B'},
+  {id:'r32_l4',m:75, dt:'2026-06-29T12:00',v:'Monterrey',     hc:'1F',    ac:'2C'},
+  {id:'r32_l5',m:83, dt:'2026-07-02T18:00',v:'Toronto',       hc:'2K',    ac:'2L'},
+  {id:'r32_l6',m:84, dt:'2026-07-02T14:00',v:'Los Angeles',   hc:'1H',    ac:'2J'},
+  {id:'r32_l7',m:81, dt:'2026-07-01T19:00',v:'San Francisco', hc:'1D',    ac:'3BEFIJ'},
+  {id:'r32_l8',m:82, dt:'2026-07-01T15:00',v:'Seattle',       hc:'1G',    ac:'3AEHIJ'},
+  // RIGHT SIDE — visual order top to bottom
+  {id:'r32_r1',m:76, dt:'2026-06-29T12:00',v:'Houston',       hc:'1C',    ac:'2F'},
+  {id:'r32_r2',m:78, dt:'2026-06-30T16:00',v:'Dallas',        hc:'2E',    ac:'2I'},
+  {id:'r32_r3',m:79, dt:'2026-06-30T20:00',v:'Mexico City',   hc:'1A',    ac:'3CEFHI'},
+  {id:'r32_r4',m:80, dt:'2026-07-01T11:00',v:'Atlanta',       hc:'1L',    ac:'3EHIJK'},
+  {id:'r32_r5',m:86, dt:'2026-07-03T17:00',v:'Miami',         hc:'1J',    ac:'2H'},
+  {id:'r32_r6',m:88, dt:'2026-07-03T13:00',v:'Dallas',        hc:'2D',    ac:'2G'},
+  {id:'r32_r7',m:85, dt:'2026-07-02T21:00',v:'Vancouver',     hc:'1B',    ac:'3EFGIJ'},
+  {id:'r32_r8',m:87, dt:'2026-07-03T20:30',v:'Kansas City',   hc:'1K',    ac:'3DEIJL'},
 ];
-// R16 official bracket flow per FIFA:
-// M89: W74+W77 → Philadelphia
-// M90: W73+W75 → Houston
-// M91: W76+W78 → New York/NJ
-// M92: W79+W80 → Mexico City
-// M93: W83+W84 → Dallas
-// M94: W81+W82 → Seattle (USA feeds into Seattle NOT Dallas)
-// M95: W86+W88 → Atlanta
-// M96: W85+W87 → Vancouver
+// R16 — official FIFA bracket flow:
+// M89(W74+W77)→Philadelphia, M90(W73+W75)→Houston
+// M93(W83+W84)→Dallas,       M94(W81+W82)→Seattle ← USA feeds Seattle!
+// M91(W76+W78)→New York/NJ,  M92(W79+W80)→Mexico City
+// M95(W86+W88)→Atlanta,      M96(W85+W87)→Vancouver
 const R16=[
-  {id:'r16_1',m:89, dt:'2026-07-04T16:00', v:'Philadelphia',  f1:'r32_2', f2:'r32_5'},
-  {id:'r16_2',m:90, dt:'2026-07-04T12:00', v:'Houston',       f1:'r32_1', f2:'r32_3'},
-  {id:'r16_3',m:91, dt:'2026-07-05T15:00', v:'New York/NJ',   f1:'r32_4', f2:'r32_6'},
-  {id:'r16_4',m:92, dt:'2026-07-05T19:00', v:'Mexico City',   f1:'r32_7', f2:'r32_8'},
-  {id:'r16_5',m:93, dt:'2026-07-06T14:00', v:'Dallas',        f1:'r32_11',f2:'r32_12'},
-  {id:'r16_6',m:94, dt:'2026-07-06T15:00', v:'Seattle',       f1:'r32_9', f2:'r32_10'},
-  {id:'r16_7',m:95, dt:'2026-07-07T11:00', v:'Atlanta',       f1:'r32_14',f2:'r32_16'},
-  {id:'r16_8',m:96, dt:'2026-07-07T15:00', v:'Vancouver',     f1:'r32_13',f2:'r32_15'},
+  // LEFT pairs (visual top to bottom)
+  {id:'r16_l1',m:89,dt:'2026-07-04T16:00',v:'Philadelphia', f1:'r32_l1',f2:'r32_l2'}, // W74+W77
+  {id:'r16_l2',m:90,dt:'2026-07-04T12:00',v:'Houston',      f1:'r32_l3',f2:'r32_l4'}, // W73+W75
+  {id:'r16_l3',m:93,dt:'2026-07-06T14:00',v:'Dallas',       f1:'r32_l5',f2:'r32_l6'}, // W83+W84
+  {id:'r16_l4',m:94,dt:'2026-07-06T15:00',v:'Seattle',      f1:'r32_l7',f2:'r32_l8'}, // W81+W82→Seattle
+  // RIGHT pairs (visual top to bottom)
+  {id:'r16_r1',m:91,dt:'2026-07-05T15:00',v:'New York/NJ',  f1:'r32_r1',f2:'r32_r2'}, // W76+W78
+  {id:'r16_r2',m:92,dt:'2026-07-05T19:00',v:'Mexico City',  f1:'r32_r3',f2:'r32_r4'}, // W79+W80
+  {id:'r16_r3',m:95,dt:'2026-07-07T11:00',v:'Atlanta',      f1:'r32_r5',f2:'r32_r6'}, // W86+W88
+  {id:'r16_r4',m:96,dt:'2026-07-07T15:00',v:'Vancouver',    f1:'r32_r7',f2:'r32_r8'}, // W85+W87
 ];
-// QF official venues per FIFA suites:
-// M97: W89+W90 → Boston
-// M98: W93+W94 → Los Angeles
-// M99: W91+W92 → Miami
-// M100: W95+W96 → Kansas City
+// QF — M97(W89+W90)→Boston, M98(W93+W94)→LA, M99(W91+W92)→Miami, M100(W95+W96)→KC
 const QF=[
-  {id:'qf_1',m:97, dt:'2026-07-09T15:00', v:'Boston',       f1:'r16_1', f2:'r16_2'},
-  {id:'qf_2',m:98, dt:'2026-07-10T14:00', v:'Los Angeles',  f1:'r16_5', f2:'r16_6'},
-  {id:'qf_3',m:99, dt:'2026-07-11T16:00', v:'Miami',        f1:'r16_3', f2:'r16_4'},
-  {id:'qf_4',m:100,dt:'2026-07-11T20:00', v:'Kansas City',  f1:'r16_7', f2:'r16_8'},
+  {id:'qf_l1',m:97, dt:'2026-07-09T15:00',v:'Boston',      f1:'r16_l1',f2:'r16_l2'}, // W89+W90
+  {id:'qf_l2',m:98, dt:'2026-07-10T14:00',v:'Los Angeles', f1:'r16_l3',f2:'r16_l4'}, // W93+W94
+  {id:'qf_r1',m:99, dt:'2026-07-11T16:00',v:'Miami',       f1:'r16_r1',f2:'r16_r2'}, // W91+W92
+  {id:'qf_r2',m:100,dt:'2026-07-11T20:00',v:'Kansas City', f1:'r16_r3',f2:'r16_r4'}, // W95+W96
 ];
+// SF — M101(W97+W98)→Dallas, M102(W99+W100)→Atlanta
 const SF=[
-  {id:'sf_1',m:101,dt:'2026-07-14T14:00', v:'Dallas',       f1:'qf_1',  f2:'qf_2'},
-  {id:'sf_2',m:102,dt:'2026-07-15T14:00', v:'Atlanta',      f1:'qf_3',  f2:'qf_4'},
+  {id:'sf_l',m:101,dt:'2026-07-14T14:00',v:'Dallas',  f1:'qf_l1',f2:'qf_l2'},
+  {id:'sf_r',m:102,dt:'2026-07-15T14:00',v:'Atlanta', f1:'qf_r1',f2:'qf_r2'},
 ];
 const FINAL_M={id:'final',m:104,dt:'2026-07-19T14:00',v:'New York/NJ'};
 const THIRD_M={id:'third',m:103,dt:'2026-07-18T16:00',v:'Miami'};
@@ -1040,14 +1035,14 @@ function resolveSlot(code, st, thirds3rd, thirdMap){
 function buildThirdMap(thirds3rd){
   const advancing=thirds3rd.slice(0,8).map(t=>t.group);
   const eligibility={
-    'r32_2':['A','B','C','D','F'],
-    'r32_5':['C','D','F','G','H'],
-    'r32_7':['C','E','F','H','I'],
-    'r32_8':['E','H','I','J','K'],
-    'r32_9':['B','E','F','I','J'],
-    'r32_10':['A','E','H','I','J'],
-    'r32_13':['E','F','G','I','J'],
-    'r32_15':['D','E','I','J','L'],
+    'r32_l1':['A','B','C','D','F'],  // M74: 3ABCDF
+    'r32_l2':['C','D','F','G','H'],  // M77: 3CDFGH
+    'r32_r3':['C','E','F','H','I'],  // M79: 3CEFHI
+    'r32_r4':['E','H','I','J','K'],  // M80: 3EHIJK
+    'r32_l7':['B','E','F','I','J'],  // M81: 3BEFIJ
+    'r32_l8':['A','E','H','I','J'],  // M82: 3AEHIJ
+    'r32_r7':['E','F','G','I','J'],  // M85: 3EFGIJ
+    'r32_r8':['D','E','I','J','L'],  // M87: 3DEIJL
   };
   const map={}, used=new Set();
   Object.keys(eligibility).forEach(slot=>{
@@ -1123,23 +1118,23 @@ function renderBracket(){
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
   const CW=165,CN=14,TW=1440,CX=TW/2;
-  const LR32=0,LR16=LR32+CW+CN,LQF=LR16+CW+CN,LSF=LQF+CW+CN;
+  const LR32x=0,LR16x=LR32x+CW+CN,LQFx=LR16x+CW+CN,LSFx=LQFx+CW+CN;
   const FIN=CX-CW/2;
-  const RSF=TW-LSF-CW,RQF=TW-LQF-CW,RR16=TW-LR16-CW,RR32=TW-LR32-CW;
+  const RSFx=TW-LSFx-CW,RQFx=TW-LQFx-CW,RR16x=TW-LR16x-CW,RR32x=TW-LR32x-CW;
   const TH=8*U+240;
 
   const hdr=(c,l,txt)=>`<div style="position:absolute;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:800;letter-spacing:0.08em;color:${c};text-align:center;top:-26px;left:${l}px;width:${CW}px">${txt}</div>`;
 
   let h=`<div style="position:relative;width:${TW}px;height:${TH}px;margin-top:32px">`;
-  h+=hdr('#5a9e7a',LR32,'ROUND OF 32');
-  h+=hdr('#5a7a9e',LR16,'ROUND OF 16');
-  h+=hdr('#8a6a9e',LQF,'QUARTER-FINALS');
-  h+=hdr('#9e7a4a',LSF,'SEMI-FINALS');
+  h+=hdr('#5a9e7a',LR32x,'ROUND OF 32');
+  h+=hdr('#5a7a9e',LR16x,'ROUND OF 16');
+  h+=hdr('#8a6a9e',LQFx,'QUARTER-FINALS');
+  h+=hdr('#9e7a4a',LSFx,'SEMI-FINALS');
   h+=hdr('var(--gold)',FIN,'🏆 FINAL');
-  h+=hdr('#9e7a4a',RSF,'SEMI-FINALS');
-  h+=hdr('#8a6a9e',RQF,'QUARTER-FINALS');
-  h+=hdr('#5a7a9e',RR16,'ROUND OF 16');
-  h+=hdr('#5a9e7a',RR32,'ROUND OF 32');
+  h+=hdr('#9e7a4a',RSFx,'SEMI-FINALS');
+  h+=hdr('#8a6a9e',RQFx,'QUARTER-FINALS');
+  h+=hdr('#5a7a9e',RR16x,'ROUND OF 16');
+  h+=hdr('#5a9e7a',RR32x,'ROUND OF 32');
 
   // Helper to place a card absolutely
   function place(id,mNum,dt,v,hc,ac,t,l){
@@ -1147,87 +1142,64 @@ function renderBracket(){
   }
 
   // ── LEFT SIDE ──────────────────────────────────────────
-  // R32 left (M73-M80)
-  const LR32m=[R32[0],R32[1],R32[2],R32[3],R32[4],R32[5],R32[6],R32[7]];
-  LR32m.forEach((m,i)=>{
-    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),LR32);
-    h+=hLine(top(0,i)+MH/2,LR32+CW,CN);
+  const LR32=[R32[0],R32[1],R32[2],R32[3],R32[4],R32[5],R32[6],R32[7]];
+  LR32.forEach((m,i)=>{
+    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),LR32x);
+    h+=hLine(top(0,i)+MH/2,LR32x+CW,CN);
   });
-  // R16 left: M89(W74+W77), M90(W73+W75), M91(W76+W78), M92(W79+W80)
-  // Visual positions: M90 pairs M73+M75 (indices 0,2), M89 pairs M74+M77 (indices 1,4)
-  // But we display them in visual order top-to-bottom: M90,M89,M91,M92
-  const LR16m=[R16[1],R16[0],R16[2],R16[3]]; // M90,M89,M91,M92 in visual order
-  // Feeder pairs for each R16 position (which R32 matches feed each R16)
-  const LFeeders=[
-    [R32.find(r=>r.id===R16[1].f1), R32.find(r=>r.id===R16[1].f2)], // M90: r32_1,r32_3
-    [R32.find(r=>r.id===R16[0].f1), R32.find(r=>r.id===R16[0].f2)], // M89: r32_2,r32_5
-    [R32.find(r=>r.id===R16[2].f1), R32.find(r=>r.id===R16[2].f2)], // M91: r32_4,r32_6
-    [R32.find(r=>r.id===R16[3].f1), R32.find(r=>r.id===R16[3].f2)], // M92: r32_7,r32_8
-  ];
+  // R16 left — each pairs adjacent rows (0+1→L1, 2+3→L2, 4+5→L3, 6+7→L4)
+  const LR16=[R16[0],R16[1],R16[2],R16[3]];
   for(let i=0;i<4;i++){
     const t1=top(0,i*2)+MH/2,t2=top(0,i*2+1)+MH/2;
-    h+=vLine(t1,t2,LR32+CW+CN-1);
-    h+=mLine(t1,t2,LR32+CW+CN-1,CN+1);
-    const m=LR16m[i];
-    const [f1,f2]=LFeeders[i];
-    place(m.id,m.m,m.dt,m.v,f1?winOf(f1.id):{label:'TBD'},f2?winOf(f2.id):{label:'TBD'},top(1,i),LR16);
-    h+=hLine(top(1,i)+MH/2,LR16+CW,CN);
+    h+=vLine(t1,t2,LR32x+CW+CN-1);
+    h+=mLine(t1,t2,LR32x+CW+CN-1,CN+1);
+    const m=LR16[i];
+    place(m.id,m.m,m.dt,m.v,winOf(LR32[i*2].id),winOf(LR32[i*2+1].id),top(1,i),LR16x);
+    h+=hLine(top(1,i)+MH/2,LR16x+CW,CN);
   }
-  // QF left: M97(W89+W90), M98(W93+W94)
-  const LQFm=[QF[0],QF[1]];
+  // QF left
+  const LQF=[QF[0],QF[1]];
   for(let i=0;i<2;i++){
     const t1=top(1,i*2)+MH/2,t2=top(1,i*2+1)+MH/2;
-    h+=vLine(t1,t2,LR16+CW+CN-1);
-    h+=mLine(t1,t2,LR16+CW+CN-1,CN+1);
-    const m=LQFm[i];
-    place(m.id,m.m,m.dt,m.v,winOf(LR16m[i*2].id),winOf(LR16m[i*2+1].id),top(2,i),LQF);
-    h+=hLine(top(2,i)+MH/2,LQF+CW,CN);
+    h+=vLine(t1,t2,LR16x+CW+CN-1);
+    h+=mLine(t1,t2,LR16x+CW+CN-1,CN+1);
+    place(LQF[i].id,LQF[i].m,LQF[i].dt,LQF[i].v,winOf(LR16[i*2].id),winOf(LR16[i*2+1].id),top(2,i),LQFx);
+    h+=hLine(top(2,i)+MH/2,LQFx+CW,CN);
   }
-  // QF→SF + SF1
   {const t1=top(2,0)+MH/2,t2=top(2,1)+MH/2;
-  h+=vLine(t1,t2,LQF+CW+CN-1);
-  h+=mLine(t1,t2,LQF+CW+CN-1,CN+1);
-  place(SF[0].id,SF[0].m,SF[0].dt,SF[0].v,winOf(LQFm[0].id),winOf(LQFm[1].id),top(3,0),LSF);
-  h+=hLine(top(3,0)+MH/2,LSF+CW,FIN-(LSF+CW));}
+  h+=vLine(t1,t2,LQFx+CW+CN-1);
+  h+=mLine(t1,t2,LQFx+CW+CN-1,CN+1);
+  place(SF[0].id,SF[0].m,SF[0].dt,SF[0].v,winOf(LQF[0].id),winOf(LQF[1].id),top(3,0),LSFx);
+  h+=hLine(top(3,0)+MH/2,LSFx+CW,FIN-(LSFx+CW));}
 
   // ── RIGHT SIDE (mirror) ────────────────────────────────
-  const RR32m=[R32[8],R32[9],R32[10],R32[11],R32[12],R32[13],R32[14],R32[15]];
-  RR32m.forEach((m,i)=>{
-    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),RR32);
-    h+=hLine(top(0,i)+MH/2,RR32-CN,CN);
+  const RR32=[R32[8],R32[9],R32[10],R32[11],R32[12],R32[13],R32[14],R32[15]];
+  RR32.forEach((m,i)=>{
+    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),RR32x);
+    h+=hLine(top(0,i)+MH/2,RR32x-CN,CN);
   });
-  // R16 right: M93(W83+W84), M94(W81+W82), M95(W86+W88), M96(W85+W87)
-  const RR16m=[R16[4],R16[5],R16[6],R16[7]]; // M93,M94,M95,M96 visual order
-  const RFeeders=[
-    [R32.find(r=>r.id===R16[4].f1), R32.find(r=>r.id===R16[4].f2)], // M93: r32_11,r32_12
-    [R32.find(r=>r.id===R16[5].f1), R32.find(r=>r.id===R16[5].f2)], // M94: r32_9,r32_10
-    [R32.find(r=>r.id===R16[6].f1), R32.find(r=>r.id===R16[6].f2)], // M95: r32_14,r32_16
-    [R32.find(r=>r.id===R16[7].f1), R32.find(r=>r.id===R16[7].f2)], // M96: r32_13,r32_15
-  ];
+  const RR16=[R16[4],R16[5],R16[6],R16[7]];
   for(let i=0;i<4;i++){
     const t1=top(0,i*2)+MH/2,t2=top(0,i*2+1)+MH/2;
-    h+=vLine(t1,t2,RR32-CN);
-    h+=mLine(t1,t2,RR32-CN,CN);
-    const m=RR16m[i];
-    const [f1,f2]=RFeeders[i];
-    place(m.id,m.m,m.dt,m.v,f1?winOf(f1.id):{label:'TBD'},f2?winOf(f2.id):{label:'TBD'},top(1,i),RR16);
-    h+=hLine(top(1,i)+MH/2,RR16-CN,CN);
+    h+=vLine(t1,t2,RR32x-CN);
+    h+=mLine(t1,t2,RR32x-CN,CN);
+    const m=RR16[i];
+    place(m.id,m.m,m.dt,m.v,winOf(RR32[i*2].id),winOf(RR32[i*2+1].id),top(1,i),RR16x);
+    h+=hLine(top(1,i)+MH/2,RR16x-CN,CN);
   }
-  // QF right: M99(W91+W92), M100(W95+W96)
-  const RQFm=[QF[2],QF[3]];
+  const RQF=[QF[2],QF[3]];
   for(let i=0;i<2;i++){
     const t1=top(1,i*2)+MH/2,t2=top(1,i*2+1)+MH/2;
-    h+=vLine(t1,t2,RR16-CN);
-    h+=mLine(t1,t2,RR16-CN,CN);
-    const m=RQFm[i];
-    place(m.id,m.m,m.dt,m.v,winOf(RR16m[i*2].id),winOf(RR16m[i*2+1].id),top(2,i),RQF);
-    h+=hLine(top(2,i)+MH/2,RQF-CN,CN);
+    h+=vLine(t1,t2,RR16x-CN);
+    h+=mLine(t1,t2,RR16x-CN,CN);
+    place(RQF[i].id,RQF[i].m,RQF[i].dt,RQF[i].v,winOf(RR16[i*2].id),winOf(RR16[i*2+1].id),top(2,i),RQFx);
+    h+=hLine(top(2,i)+MH/2,RQFx-CN,CN);
   }
   {const t1=top(2,0)+MH/2,t2=top(2,1)+MH/2;
-  h+=vLine(t1,t2,RQF-CN);
-  h+=mLine(t1,t2,RQF-CN,CN);
-  place(SF[1].id,SF[1].m,SF[1].dt,SF[1].v,winOf(RQFm[0].id),winOf(RQFm[1].id),top(3,0),RSF);
-  h+=hLine(top(3,0)+MH/2,FIN+CW,RSF-(FIN+CW));}
+  h+=vLine(t1,t2,RQFx-CN);
+  h+=mLine(t1,t2,RQFx-CN,CN);
+  place(SF[1].id,SF[1].m,SF[1].dt,SF[1].v,winOf(RQF[0].id),winOf(RQF[1].id),top(3,0),RSFx);
+  h+=hLine(top(3,0)+MH/2,FIN+CW,RSFx-(FIN+CW));}
 
   // ── FINAL + CHAMPION + 3RD ─────────────────────────────
   const fTop=top(3,0);
