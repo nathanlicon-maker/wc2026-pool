@@ -1103,7 +1103,7 @@ function renderBracket(){
   function res(code){return resolveSlot(code,st,thirds,thirdMap);}
   function winOf(id){const w=gv(id+'_winner');return w?{name:w,flag:TEAMS.find(t=>t.name===w)?.flag||''}:{label:`W${R32.find(r=>r.id===id)?.m||R16.find(r=>r.id===id)?.m||QF.find(r=>r.id===id)?.m||SF.find(r=>r.id===id)?.m||''}`};}
 
-  const MH=38, GAP=40, U=MH+GAP;
+  const MH=38, GAP=60, U=MH+GAP;
   function top(r,i){return i*Math.pow(2,r)*U+(Math.pow(2,r)-1)*U/2;}
 
   const CW=165,CN=14,TW=1440,CX=TW/2;
