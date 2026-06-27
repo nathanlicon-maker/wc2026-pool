@@ -1214,8 +1214,9 @@ function renderBracket(){
   place(FINAL_M.id,FINAL_M.m,FINAL_M.dt,FINAL_M.v,winOf(SF[0].id),winOf(SF[1].id),fTop,FIN);
   const champion=gv('champion');
   const champTop=fTop+MH+22;
-  h+=`<div style="position:absolute;top:${fTop+MH+4}px;left:${FIN}px;width:${CW}px;text-align:center">
-  <img src="https://digitalhub.fifa.com/m/1ee1e6f8083bc38a/original/worldcup2026-logo.png" style="height:48px;opacity:0.85" onerror="this.style.display='none'">
+ h+=`<div style="position:absolute;top:${fTop+MH+4}px;left:${FIN}px;width:${CW}px;text-align:center">
+  <div style="font-size:48px;line-height:1">🏆</div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-top:2px">FIFA WORLD CUP 2026</div>
 </div>`;
   h+=`<div style="position:absolute;top:${champTop}px;left:${FIN}px;width:${CW}px;
     background:rgba(212,168,67,0.1);border:2px solid var(--gold);border-radius:10px;padding:10px;text-align:center">
