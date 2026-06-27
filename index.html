@@ -2116,7 +2116,7 @@ function renderAdmin(){
         </div>
       </div>`;
     }).join('');
-    return `<div style="grid-column:1/-1;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold);letter-spacing:0.06em;padding:10px 0 4px;border-bottom:2px solid rgba(212,168,67,0.25);margin-top:12px">GROUP ${g}</div>${teamCards}`;
+    return `<div style="grid-column:1/-1;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:var(--gold);letter-spacing:0.06em;padding:10px 0 4px;border-bottom:2px solid rgba(212,168,67,0.25);margin-top:12px">GROUP ${g}</div>${teamCards}<div style="grid-column:1/-1;margin:4px 0 10px"><button class="btn btn-gold" onclick="saveKOGroup('${g}')" style="font-size:13px;padding:7px 18px">💾 Save Group ${g}</button></div>`;
   }).join('');
 }
 function saveConfig(){
@@ -2128,6 +2128,29 @@ function saveConfig(){
   S.playerNames=Array.from({length:16},(_,i)=>document.getElementById(`pname-${i}`)?.value||'');
   saveLocal();syncWrite();
   renderAll();toast('Settings saved ✓');
+}
+function saveKOGroup(g){
+  const groupTeams=TEAMS.filter(t=>t.group===g);
+  groupTeams.forEach(t=>{
+    const k=t.name.replace(/\W/g,'_');
+    if(!S.teamStats[t.name])S.teamStats[t.name]={};
+    const ts=S.teamStats[t.name];
+    const fin=document.getElementById(`fin-${k}`)?.value||'';
+    ts.final=fin;
+    ts.koGoals=parseInt(document.getElementById(`kog-${k}`)?.value)||0;
+    ts.bonus=parseInt(document.getElementById(`bon-${k}`)?.value)||0;
+    ts.penWin=parseInt(document.getElementById(`pen-${k}`)?.value)||0;
+    ts.groupTop=parseInt(document.getElementById(`gtop-${k}`)?.value)||0;
+    ts.groupExit=parseInt(document.getElementById(`gext-${k}`)?.value)||0;
+    const fin2=ts.final;
+    ts.r32=0;ts.r16=0;ts.qf=0;ts.sf=0;
+    if(['R32','R16','QF','SF','RU','W'].includes(fin2))ts.r32=1;
+    if(['R16','QF','SF','RU','W'].includes(fin2))ts.r16=1;
+    if(['QF','SF','RU','W'].includes(fin2))ts.qf=1;
+    if(['SF','RU','W'].includes(fin2))ts.sf=1;
+  });
+  saveLocal();syncWrite();
+  renderLeaderboard();renderStandings();toast(`Group ${g} saved \u2713`);
 }
 function saveKO(){
   TEAMS.forEach(t=>{
