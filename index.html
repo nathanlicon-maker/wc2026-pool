@@ -271,10 +271,8 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
     <button class="gf-btn active" id="teams-filter-all" onclick="setTeamsFilter('')">All Teams</button>
     <div id="teams-filter-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     <button class="gf-btn" id="teams-view-groups-btn" onclick="toggleGroupView()" style="margin-left:auto">🌍 Group View</button>
-    <button class="gf-btn" id="teams-view-3rd-btn" onclick="toggle3rdView()">🥉 3rd Place</button>
   </div>
   <div id="group-standings-container" style="display:none"></div>
-  <div id="third-place-container" style="display:none"></div>
   <div id="standings-table-wrap" style="overflow-x:auto">
     <table class="standings-table">
       <thead><tr>
@@ -1720,119 +1718,7 @@ function renderGroupStandings(){
   document.getElementById('group-standings-container').innerHTML=html;
 }
 
-let thirdViewActive=false;
-
-function toggle3rdView(){
-  thirdViewActive=!thirdViewActive;
-  const btn=document.getElementById('teams-view-3rd-btn');
-  const tableWrap=document.getElementById('standings-table-wrap');
-  const groupContainer=document.getElementById('group-standings-container');
-  const thirdContainer=document.getElementById('third-place-container');
-  if(thirdViewActive){
-    // Turn off group view if active
-    groupViewActive=false;
-    document.getElementById('teams-view-groups-btn').classList.remove('active');
-    groupContainer.style.display='none';
-    if(tableWrap)tableWrap.style.display='none';
-    btn.classList.add('active');
-    thirdContainer.style.display='block';
-    render3rdPlace();
-  } else {
-    btn.classList.remove('active');
-    thirdContainer.style.display='none';
-    if(tableWrap)tableWrap.style.display='block';
-  }
-}
-
-function render3rdPlace(){
-  // Collect 3rd place team from each group
-  const thirds=[];
-  ['A','B','C','D','E','F','G','H','I','J','K','L'].forEach(g=>{
-    const groupTeams=TEAMS.filter(t=>t.group===g).map(t=>{
-      const ts=S.teamStats[t.name]||{};
-      const gw=ts.gw||0,gd=ts.gd||0,gl=ts.gl||0,gf=ts.gf||0;
-      const ga=MATCHES.filter(m=>m.home===t.name||m.away===t.name).reduce((acc,m)=>{
-        const sc=S.scores[m.id];
-        if(!sc||sc.hg==null||sc.ag==null)return acc;
-        return acc+(m.home===t.name?+sc.ag:+sc.hg);
-      },0);
-      return {name:t.name,flag:t.flag,rank:t.rank,
-        pts:gw*3+gd,gw,gd,gl,gf,ga,gDiff:gf-ga,group:g,
-        owner:S.draft[t.name]||'—',poolPts:calcTeamPts(t.name)};
-    }).sort((a,b)=>b.pts-a.pts||b.gDiff-a.gDiff||b.gf-a.gf||a.rank-b.rank);
-    if(groupTeams.length>=3)thirds.push(groupTeams[2]);
-  });
-
-  // Rank by FIFA criteria: Pts → GD → GF → FIFA rank
-  thirds.sort((a,b)=>b.pts-a.pts||b.gDiff-a.gDiff||b.gf-a.gf||a.rank-b.rank);
-  const top8=new Set(thirds.slice(0,8).map(t=>t.name));
-
-  let html=`
-  <div style="margin-bottom:16px;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:8px;padding:12px 16px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);margin-bottom:4px">🥉 Third Place Standings — Race for the Round of 32</div>
-    <div style="font-size:11px;color:var(--muted)">All 12 third-place teams ranked by official FIFA criteria: <strong style="color:var(--white)">Points → Goal Diff → Goals Scored → FIFA Rank</strong>. Top 8 advance. Updates live as scores are entered.</div>
-  </div>
-  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead><tr style="background:rgba(255,255,255,0.04)">
-      <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700">#</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700">STATUS</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:10px;font-weight:700">TEAM</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">GRP</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">GP</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">W</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">D</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">L</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">GF</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">GA</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">GD</th>
-      <th style="padding:8px 4px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">PTS</th>
-      <th style="padding:8px 6px;text-align:center;color:var(--muted);font-size:10px;font-weight:700">FIFA</th>
-      <th style="padding:8px 8px;text-align:right;color:var(--muted);font-size:10px;font-weight:700">OWNER</th>
-      <th style="padding:8px 8px;text-align:right;color:var(--gold);font-size:10px;font-weight:700">POOL</th>
-    </tr></thead>
-    <tbody>
-      ${thirds.map((t,i)=>{
-        const advancing=top8.has(t.name);
-        const isDH=t.rank>20;
-        const cutLine=i===8;
-        return `${cutLine?`<tr><td colspan="15" style="padding:0;height:2px;background:rgba(255,75,43,0.5)"></td></tr>`:''}
-        <tr style="background:${advancing?'rgba(90,158,106,0.05)':'rgba(255,75,43,0.03)'};border-bottom:1px solid var(--line);border-left:${i===0?'3px solid var(--gold)':advancing?'3px solid #5a9e6a':'3px solid rgba(255,75,43,0.4)'}">
-          <td style="padding:9px 10px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:${advancing?'var(--white)':'var(--muted)'}">${i+1}</td>
-          <td style="padding:9px 10px">${advancing
-            ?`<span style="background:rgba(90,158,106,0.2);border:1px solid rgba(90,158,106,0.4);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;color:#5a9e6a;white-space:nowrap">✅ ADVANCING</span>`
-            :`<span style="background:rgba(255,75,43,0.1);border:1px solid rgba(255,75,43,0.3);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;color:var(--coral);white-space:nowrap">❌ ELIMINATED</span>`}
-          </td>
-          <td style="padding:9px 10px">
-            <div style="display:flex;align-items:center;gap:7px">
-              <span style="font-size:18px">${t.flag}</span>
-              <div>
-                <div style="font-weight:600;color:${advancing?'var(--white)':'var(--muted)'}">${t.name}</div>
-                ${isDH?'<span style="font-size:9px;color:var(--gold);font-weight:700">×1.5 DH</span>':''}
-              </div>
-            </div>
-          </td>
-          <td style="padding:9px 4px;text-align:center;color:var(--muted);font-weight:600">${t.group}</td>
-          <td style="padding:9px 4px;text-align:center;color:var(--muted)">${t.gw+t.gd+t.gl}</td>
-          <td style="padding:9px 4px;text-align:center;color:#5a9e6a;font-weight:600">${t.gw}</td>
-          <td style="padding:9px 4px;text-align:center;color:var(--muted)">${t.gd}</td>
-          <td style="padding:9px 4px;text-align:center;color:var(--coral)">${t.gl}</td>
-          <td style="padding:9px 4px;text-align:center">${t.gf}</td>
-          <td style="padding:9px 4px;text-align:center;color:var(--muted)">${t.ga}</td>
-          <td style="padding:9px 4px;text-align:center;font-weight:600;color:${t.gDiff>0?'#5a9e6a':t.gDiff<0?'var(--coral)':'var(--muted)'}">${t.gDiff>0?'+':''}${t.gDiff}</td>
-          <td style="padding:9px 4px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--white)">${t.pts}</td>
-          <td style="padding:9px 6px;text-align:center;color:${isDH?'var(--gold)':'var(--muted)'};font-weight:${isDH?700:400}">#${t.rank}</td>
-          <td style="padding:9px 8px;text-align:right"><span style="background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:10px;color:var(--muted)">${t.owner}</span></td>
-          <td style="padding:9px 8px;text-align:right;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--gold)">${t.poolPts}</td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table></div>
-  <div style="margin-top:10px;font-size:11px;color:var(--muted)">🟢 Top 8 advance to R32 · 🔴 Bottom 4 eliminated · Red line = cut line</div>`;
-
-  document.getElementById('third-place-container').innerHTML=html;
-}
-
-
+function renderStandings(){
   const stageMap={W:'Champion',RU:'Runner-Up',SF:'Semi-Final',QF:'Quarter-Final',R16:'Round of 16',R32:'Round of 32',GS:'Group Stage',GX:'Eliminated'};
   const numP=S.config.players||10;
   const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
