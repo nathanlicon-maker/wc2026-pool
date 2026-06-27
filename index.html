@@ -1227,25 +1227,74 @@ function renderBracket(){
 
   // ── COMMISSIONER PANEL ─────────────────────────────────
   const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+
+  // Resolve team for commissioner panel — uses group standings for R32, saved winners for later rounds
+  function panelTeam(id,side){
+    const saved=gv(id+'_'+side);
+    if(saved)return {name:saved,flag:TEAMS.find(t=>t.name===saved)?.flag||''};
+    const r32m=R32.find(r=>r.id===id);
+    if(r32m){
+      const code=side==='home'?r32m.hc:r32m.ac;
+      const resolved=resolveTeam(code,st,thirds,thirdMap);
+      return resolved.name?{name:resolved.name,flag:resolved.flag||''}:{name:'',label:resolved.label||'TBD'};
+    }
+    return {name:'',label:'TBD'};
+  }
+
   h+=`<div style="margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter Match Winners</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Teams auto-fill from group standings. Enter the winner of each completed match. Bracket updates for everyone instantly.</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px">✏️ Commissioner: Enter KO Scores</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">
+      Enter score for each completed match. Winner auto-detects from score.
+      Tick <strong style="color:var(--white)">🥅 Pens</strong> if it went to penalties and enter the winner manually.
+      <strong style="color:var(--white)">+2pts</strong> per KO goal · <strong style="color:var(--white)">+5pts</strong> pen win · winners auto-advance to next round.
+    </div>
     <datalist id="team-dl">${TEAMS.map(t=>`<option value="${t.name}">`).join('')}</datalist>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px">
       ${allM.map(m=>{
-        const home=gv(m.id+'_home')||'TBD', away=gv(m.id+'_away')||'TBD';
-        const dt=m.dt?fmtDT(m.dt):'';
-        return `<div style="background:var(--card2);border-radius:7px;padding:9px">
-          <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:2px">M${m.m} · ${dt}</div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${home} vs ${away}</div>
-          <input type="text" id="b_${m.id}_winner" value="${gv(m.id+'_winner')}" placeholder="Winner..." list="team-dl"
-            style="width:100%;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.3);border-radius:4px;
-            color:var(--gold);font-size:11px;padding:4px 6px;outline:none;box-sizing:border-box">
+        const hRes=panelTeam(m.id,'home');
+        const aRes=panelTeam(m.id,'away');
+        const hName=hRes.name||hRes.label||'TBD';
+        const aName=aRes.name||aRes.label||'TBD';
+        const hFlag=hRes.flag||'';
+        const aFlag=aRes.flag||'';
+        const hg=gv(m.id+'_hg');
+        const ag=gv(m.id+'_ag');
+        const winner=gv(m.id+'_winner');
+        const pen=gv(m.id+'_pen')==='1';
+        const hasScore=hg!==''&&ag!=='';
+        const isTBD=!hRes.name&&!aRes.name&&hName==='TBD'&&aName==='TBD';
+        return `<div style="background:var(--card2);border-radius:8px;padding:10px;
+          border:1px solid ${winner?'rgba(90,158,106,0.4)':hasScore?'rgba(212,168,67,0.25)':'var(--line)'};
+          opacity:${isTBD?0.45:1}">
+          <div style="font-size:9px;font-weight:800;color:var(--gold);margin-bottom:6px;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.05em">M${m.m} · ${fmtDT(m.dt)} · ${m.v}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:7px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:${winner===hRes.name&&hRes.name?'var(--gold)':'var(--white)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hFlag} ${hName}</div>
+            </div>
+            <input type="number" id="b_${m.id}_hg" value="${hg}" min="0" placeholder="-"
+              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:15px;font-weight:800;padding:3px;text-align:center;outline:none;flex-shrink:0">
+            <span style="color:var(--muted);font-size:13px;flex-shrink:0;font-weight:700">:</span>
+            <input type="number" id="b_${m.id}_ag" value="${ag}" min="0" placeholder="-"
+              style="width:36px;background:var(--pitch);border:1px solid var(--line);border-radius:4px;color:var(--white);font-size:15px;font-weight:800;padding:3px;text-align:center;outline:none;flex-shrink:0">
+            <div style="flex:1;min-width:0;text-align:right">
+              <div style="font-size:12px;font-weight:600;color:${winner===aRes.name&&aRes.name?'var(--gold)':'var(--white)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${aName} ${aFlag}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0">
+              <input type="checkbox" id="b_${m.id}_pen" ${pen?'checked':''} style="accent-color:var(--gold)"> 🥅 Pens
+            </label>
+            <input type="text" id="b_${m.id}_winner" value="${winner}"
+              placeholder="${pen?'Who won pens?':hasScore?'Auto-detected':'Score first...'}" list="team-dl"
+              style="flex:1;background:rgba(212,168,67,0.06);border:1px solid ${winner?'rgba(90,158,106,0.5)':'rgba(212,168,67,0.2)'};
+              border-radius:4px;color:${winner?'#5a9e6a':'var(--gold)'};font-size:10px;padding:3px 5px;outline:none;min-width:0">
+          </div>
+          ${winner?`<div style="margin-top:5px;font-size:10px;color:#5a9e6a;font-weight:600">✓ ${winner} advances</div>`:''}
         </div>`;
       }).join('')}
     </div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button class="btn btn-gold" onclick="saveBracket()">💾 Save Winners</button>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-gold" onclick="saveBracket()">💾 Save KO Results</button>
       <button class="btn btn-ghost" onclick="renderBracket()">🔄 Refresh</button>
     </div>
   </div>`;
@@ -1255,15 +1304,87 @@ function renderBracket(){
 
 function saveBracket(){
   if(!S.bracket)S.bracket={};
-  [...R32,...R16,...QF,...SF,FINAL_M,THIRD_M].forEach(m=>{
-    const w=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
-    if(w)S.bracket[m.id+'_winner']=w;
-    else delete S.bracket[m.id+'_winner'];
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+
+  // Step 1: Save scores, detect winners from score
+  allM.forEach(m=>{
+    const hg=document.getElementById(`b_${m.id}_hg`)?.value;
+    const ag=document.getElementById(`b_${m.id}_ag`)?.value;
+    const pen=document.getElementById(`b_${m.id}_pen`)?.checked||false;
+    const manualWinner=document.getElementById(`b_${m.id}_winner`)?.value.trim()||'';
+    const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
+    const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
+
+    if(hg!==''&&hg!=null)S.bracket[m.id+'_hg']=hg;
+    else delete S.bracket[m.id+'_hg'];
+    if(ag!==''&&ag!=null)S.bracket[m.id+'_ag']=ag;
+    else delete S.bracket[m.id+'_ag'];
+    S.bracket[m.id+'_pen']=pen?'1':'0';
+
+    if(manualWinner){
+      S.bracket[m.id+'_winner']=manualWinner;
+    } else if(hg!==''&&ag!==''&&hg!=null&&ag!=null){
+      const h=parseInt(hg),a=parseInt(ag);
+      if(h>a&&home)S.bracket[m.id+'_winner']=home;
+      else if(a>h&&away)S.bracket[m.id+'_winner']=away;
+      else delete S.bracket[m.id+'_winner'];
+    } else {
+      delete S.bracket[m.id+'_winner'];
+    }
   });
+
+  // Step 2: Auto-propagate winners into next round slots
+  [...R16,...QF,...SF].forEach(m=>{
+    if(m.f1){const w=S.bracket[m.f1+'_winner']||'';if(w)S.bracket[m.id+'_home']=w;}
+    if(m.f2){const w=S.bracket[m.f2+'_winner']||'';if(w)S.bracket[m.id+'_away']=w;}
+  });
+  if(SF[0]){const w=S.bracket[SF[0].id+'_winner']||'';if(w)S.bracket['final_home']=w;}
+  if(SF[1]){const w=S.bracket[SF[1].id+'_winner']||'';if(w)S.bracket['final_away']=w;}
   S.bracket.champion=S.bracket['final_winner']||'';
+
+  // Step 3: Tally KO goals and pen wins per team
+  const koGoals={},penWins={};
+  allM.forEach(m=>{
+    const hg=parseInt(S.bracket[m.id+'_hg']||'');
+    const ag=parseInt(S.bracket[m.id+'_ag']||'');
+    const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
+    const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
+    const winner=S.bracket[m.id+'_winner'];
+    const pen=S.bracket[m.id+'_pen']==='1';
+    if(!isNaN(hg)&&home)koGoals[home]=(koGoals[home]||0)+hg;
+    if(!isNaN(ag)&&away)koGoals[away]=(koGoals[away]||0)+ag;
+    if(pen&&winner)penWins[winner]=(penWins[winner]||0)+1;
+  });
+  Object.entries(koGoals).forEach(([t,g])=>{if(!S.teamStats[t])S.teamStats[t]={};S.teamStats[t].koGoals=g;});
+  Object.entries(penWins).forEach(([t,p])=>{if(!S.teamStats[t])S.teamStats[t]={};S.teamStats[t].penWin=p;});
+
+  // Step 4: Auto-set KO stage reached per team
+  const teamStage={};
+  const rounds=[{stage:'r32',ids:R32},{stage:'r16',ids:R16},{stage:'qf',ids:QF},{stage:'sf',ids:SF}];
+  const nextStage={r32:'r16',r16:'qf',qf:'sf',sf:'final'};
+  rounds.forEach(({stage,ids})=>{
+    ids.forEach(m=>{
+      const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
+      const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
+      const winner=S.bracket[m.id+'_winner'];
+      if(home&&!teamStage[home])teamStage[home]=stage;
+      if(away&&!teamStage[away])teamStage[away]=stage;
+      if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+    });
+  });
+  const finW=S.bracket['final_winner'],finH=S.bracket['final_home'],finA=S.bracket['final_away'];
+  if(finH)teamStage[finH]='final';
+  if(finA)teamStage[finA]='final';
+  if(finW){teamStage[finW]='W';const ru=finW===finH?finA:finH;if(ru)teamStage[ru]='RU';}
+  const stageVal={r32:'R32',r16:'R16',qf:'QF',sf:'SF',final:'RU',W:'W',RU:'RU'};
+  Object.entries(teamStage).forEach(([team,stage])=>{
+    if(!S.teamStats[team])S.teamStats[team]={};
+    S.teamStats[team].final=stageVal[stage]||stage;
+  });
+
   saveLocal();syncWrite();
   renderBracket();
-  toast('🏆 Bracket saved & synced ✓');
+  toast('🏆 KO results saved & synced ✓');
 }
 
 
