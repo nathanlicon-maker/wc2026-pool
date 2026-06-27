@@ -1235,7 +1235,7 @@ function renderBracket(){
     const r32m=R32.find(r=>r.id===id);
     if(r32m){
       const code=side==='home'?r32m.hc:r32m.ac;
-      const resolved=resolveTeam(code,st,thirds,thirdMap);
+      const resolved=resolveSlot(code,st,thirds,thirdMap);
       return resolved.name?{name:resolved.name,flag:resolved.flag||''}:{name:'',label:resolved.label||'TBD'};
     }
     return {name:'',label:'TBD'};
