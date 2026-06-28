@@ -1298,7 +1298,7 @@ function renderBracket(){
   h+=`</div>`; // end bracket
 
   // ── COMMISSIONER PANEL ─────────────────────────────────
-  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M].sort((a,b)=>parseCT(a.dt)-parseCT(b.dt));
   const koUnlocked=sessionStorage.getItem('koUnlocked')==='1';
 
   // Resolve team for commissioner panel — uses group standings for R32, saved winners for later rounds
