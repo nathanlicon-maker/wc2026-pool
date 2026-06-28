@@ -778,38 +778,51 @@ function renderLeaderboard(){
 function renderDailyRecap(){
 
 
-  // Find most recent day with completed scores
-  const allCompleted=MATCHES.filter(m=>{
+  // ── Gather ALL completed matches: group stage + KO bracket ──────────
+  const allKOFixtures=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+
+  // Group stage completed matches
+  const gsCompleted=MATCHES.filter(m=>{
     const sc=S.scores[m.id]||{};
     return sc.hg!==''&&sc.hg!=null&&sc.ag!==''&&sc.ag!=null;
-  }).sort((a,b)=>parseCT(b.dt)-parseCT(a.dt));
+  }).map(m=>({...m,stage:'GS'}));
 
-  if(!allCompleted.length){
-    document.getElementById('daily-recap').innerHTML='';
-    return;
-  }
-
-  // Get the most recent match date
-  const lastMatchDate=parseCT(allCompleted[0].dt);
-  const recapDate=lastMatchDate;
-  const completed=allCompleted.filter(m=>{
-    const d=parseCT(m.dt);
-    return d.toDateString()===lastMatchDate.toDateString();
+  // KO bracket completed matches
+  const koCompleted=allKOFixtures.filter(m=>{
+    const hg=gv(m.id+'_hg'), ag=gv(m.id+'_ag');
+    return hg!==''&&hg!=null&&ag!==''&&ag!=null;
+  }).map(m=>{
+    const home=gv(m.id+'_home')||m.home||'';
+    const away=gv(m.id+'_away')||m.away||'';
+    const hg=gv(m.id+'_hg'), ag=gv(m.id+'_ag');
+    const winner=gv(m.id+'_winner')||'';
+    const pen=gv(m.id+'_pen')==='1';
+    const round=R32.find(r=>r.id===m.id)?'R32':R16.find(r=>r.id===m.id)?'R16':QF.find(r=>r.id===m.id)?'QF':SF.find(r=>r.id===m.id)?'SF':m.id===FINAL_M.id?'Final':'3rd';
+    return {...m,home,away,hgVal:hg,agVal:ag,winner,pen,round,stage:'KO'};
   });
 
-  const dayNum=Math.max(1,Math.floor((recapDate-new Date('2026-06-11T04:59:00Z'))/(1000*60*60*24)));
+  // Find most recent day across both
+  const allDated=[...gsCompleted,...koCompleted].filter(m=>m.dt);
+  if(!allDated.length){document.getElementById('daily-recap').innerHTML='';return;}
+  allDated.sort((a,b)=>parseCT(b.dt)-parseCT(a.dt));
+  const lastDate=parseCT(allDated[0].dt);
+  const todayGS=gsCompleted.filter(m=>parseCT(m.dt).toDateString()===lastDate.toDateString());
+  const todayKO=koCompleted.filter(m=>parseCT(m.dt).toDateString()===lastDate.toDateString());
+  const dayNum=Math.max(1,Math.floor((lastDate-new Date('2026-06-11T04:59:00Z'))/(1000*60*60*24)));
 
-  // Build WC results
+  // ── Build match results HTML ─────────────────────────────────────
   let resultsHtml='';
-  completed.forEach(m=>{
+
+  // Group stage results
+  todayGS.forEach(m=>{
     const sc=S.scores[m.id];
     const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
     const ht=TEAMS.find(t=>t.name===m.home);
     const at=TEAMS.find(t=>t.name===m.away);
     const hOwner=S.draft[m.home]||'';
     const aOwner=S.draft[m.away]||'';
-    const winner=hg>ag?m.home:ag>hg?m.away:'Draw';
     const isDraw=hg===ag;
+    const winner=hg>ag?m.home:ag>hg?m.away:'Draw';
     resultsHtml+=`
       <div style="background:var(--card2);border-radius:8px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -835,35 +848,85 @@ function renderDailyRecap(){
       </div>`;
   });
 
-  // Build player pts today
+  // KO bracket results
+  todayKO.forEach(m=>{
+    const hg=parseInt(m.hgVal), ag=parseInt(m.agVal);
+    const ht=TEAMS.find(t=>t.name===m.home);
+    const at=TEAMS.find(t=>t.name===m.away);
+    const hOwner=S.draft[m.home]||'';
+    const aOwner=S.draft[m.away]||'';
+    const winner=m.winner||( hg>ag?m.home:ag>hg?m.away:'');
+    const penNote=m.pen?` · 🥅 Pens`:'';
+    const roundLabel={R32:'Round of 32',R16:'Round of 16',QF:'Quarter-Final',SF:'Semi-Final',Final:'🏆 Final','3rd':'3rd Place'}[m.round]||m.round;
+    resultsHtml+=`
+      <div style="background:var(--card2);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid var(--gold)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <span style="font-size:18px">${ht?.flag||''}</span>
+            <div>
+              <div style="font-weight:${m.winner===m.home?'700':'400'};font-size:13px;color:${m.winner===m.home?'var(--white)':'var(--muted)'}">${m.home}</div>
+              ${hOwner?`<div style="font-size:10px;color:var(--muted)">${hOwner}</div>`:''}
+            </div>
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--gold);text-align:center;min-width:60px">${hg} - ${ag}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end">
+            <div style="text-align:right">
+              <div style="font-weight:${m.winner===m.away?'700':'400'};font-size:13px;color:${m.winner===m.away?'var(--white)':'var(--muted)'}">${m.away}</div>
+              ${aOwner?`<div style="font-size:10px;color:var(--muted)">${aOwner}</div>`:''}
+            </div>
+            <span style="font-size:18px">${at?.flag||''}</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;text-align:center">
+          🏆 ${winner} win · ${roundLabel}${penNote} · ${m.v||''}
+        </div>
+      </div>`;
+  });
+
+  // ── Build player points HTML ──────────────────────────────────────
   const numP=S.config.players||10;
   const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
-  const todayIds=new Set(completed.map(m=>m.id));
+  const todayGSIds=new Set(todayGS.map(m=>m.id));
+  const todayKOIds=new Set(todayKO.map(m=>m.id));
 
   const playerDayPts=players.map(p=>{
     const teams=playerTeams(p);
     let pts=0;
     let teamsPlayed=[];
+
     teams.forEach(t=>{
-      MATCHES.filter(m=>todayIds.has(m.id)&&(m.home===t.name||m.away===t.name)).forEach(m=>{
+      // Group stage points for today
+      MATCHES.filter(m=>todayGSIds.has(m.id)&&(m.home===t.name||m.away===t.name)).forEach(m=>{
         const sc=S.scores[m.id]||{};
         if(sc.hg===''||sc.hg==null)return;
         const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
         const isHome=m.home===t.name;
-        const gf=isHome?hg:ag;
-        const ga=isHome?ag:hg;
+        const gf=isHome?hg:ag, ga=isHome?ag:hg;
         const isDH=t.rank>(S.config.dh||20);
         const mult=isDH?1.5:1;
-        // Calculate points from THIS match only
         const win=gf>ga,draw=gf===ga,loss=gf<ga;
         const cs=ga===0?1:0;
-        const posMatchPts=(win?5:draw?2:0)+gf+cs*3;
-        const negMatchPts=loss?-1:0;
-        const matchPts=Math.round((posMatchPts*mult+negMatchPts)*10)/10;
+        const matchPts=Math.round(((win?5:draw?2:0)+gf+cs*3)*mult+(loss?-1:0));
         pts+=matchPts;
-        teamsPlayed.push({team:t,pts:matchPts,m});
+        teamsPlayed.push({team:t,pts:matchPts,label:`${gf}-${ga}`,result:win?'W':draw?'D':'L',stage:'GS'});
+      });
+
+      // KO points for today — R32 win (+8), goals (+2ea), pen win (+5)
+      todayKO.filter(m=>(m.home===t.name||m.away===t.name)).forEach(m=>{
+        const hg=parseInt(m.hgVal), ag=parseInt(m.agVal);
+        const isHome=m.home===t.name;
+        const gf=isHome?hg:ag, ga=isHome?ag:hg;
+        const won=m.winner===t.name;
+        const pen=m.pen&&won;
+        const roundPts={R32:8,R16:10,QF:15,SF:20}[m.round]||0;
+        const koGoalPts=gf*2;
+        const penPts=pen?5:0;
+        const matchPts=(won?roundPts:0)+koGoalPts+penPts;
+        pts+=matchPts;
+        teamsPlayed.push({team:t,pts:matchPts,label:`${gf}-${ga}`,result:won?'W':'L',stage:'KO',round:m.round,pen});
       });
     });
+
     return{name:p,pts:Math.round(pts*10)/10,teamsPlayed};
   }).filter(p=>p.teamsPlayed.length>0).sort((a,b)=>b.pts-a.pts);
 
@@ -871,17 +934,12 @@ function renderDailyRecap(){
   playerDayPts.forEach((p,i)=>{
     const medals=['🥇','🥈','🥉'];
     const medal=medals[i]||`${i+1}.`;
-    const chips=p.teamsPlayed.map(({team,pts,m})=>{
-      const sc=S.scores[m.id];
-      const hg=parseInt(sc.hg),ag=parseInt(sc.ag);
-      const isHome=m.home===team.name;
-      const scored=isHome?hg:ag;
-      const conceded=isHome?ag:hg;
-      const result=scored>conceded?'W':scored===conceded?'D':'L';
+    const chips=p.teamsPlayed.map(({team,pts,label,result,stage,round,pen})=>{
       const resultColor=result==='W'?'#5a9e6a':result==='D'?'var(--muted)':'var(--coral)';
+      const stageBadge=stage==='KO'?` <span style="font-size:9px;color:var(--gold)">${round}${pen?' 🥅':''}</span>`:'';
       return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:11px">
-        ${team.flag} ${team.name}
-        <span style="font-weight:700;color:${resultColor}">${result} ${scored}-${conceded}</span>
+        ${team.flag} ${team.name}${stageBadge}
+        <span style="font-weight:700;color:${resultColor}">${result} ${label}</span>
         <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>
       </span>`;
     }).join('');
@@ -900,13 +958,12 @@ function renderDailyRecap(){
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:700;color:var(--white);letter-spacing:0.02em">
           📅 DAY ${dayNum} RECAP
         </div>
-        <div style="font-size:12px;color:var(--muted)">${recapDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+        <div style="font-size:12px;color:var(--muted)">${lastDate.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:8px;text-transform:uppercase">⚽ Match Results</div>
-          ${resultsHtml}
+          ${resultsHtml||'<div style="color:var(--muted);font-size:13px">No matches today</div>'}
         </div>
         <div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.06em;margin-bottom:8px;text-transform:uppercase">🏅 Points Earned Today</div>
