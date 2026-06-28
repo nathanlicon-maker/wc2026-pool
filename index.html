@@ -937,26 +937,26 @@ function submitFeedback(){
 // Official FIFA 2026 match numbers, times in CDT
 // ═══════════════════════════════════════════════════════════════════
 
-// Official R32 fixtures per FIFA regulations
+// Official R32 fixtures — updated from confirmed bracket (Jun 28 2026)
 const R32=[
-  // LEFT SIDE — visual order top to bottom (matches how they appear in bracket)
-  {id:'r32_l1',m:74, dt:'2026-06-28T21:30',v:'Boston',        hc:'1E',    ac:'3ABCDF'},
-  {id:'r32_l2',m:77, dt:'2026-06-29T20:00',v:'New York/NJ',   hc:'1I',    ac:'3CDFGH'},
-  {id:'r32_l3',m:73, dt:'2026-06-28T14:00',v:'Los Angeles',   hc:'2A',    ac:'2B'},
-  {id:'r32_l4',m:75, dt:'2026-06-29T12:00',v:'Monterrey',     hc:'1F',    ac:'2C'},
-  {id:'r32_l5',m:83, dt:'2026-07-02T18:00',v:'Toronto',       hc:'2K',    ac:'2L'},
-  {id:'r32_l6',m:84, dt:'2026-07-02T14:00',v:'Los Angeles',   hc:'1H',    ac:'2J'},
-  {id:'r32_l7',m:81, dt:'2026-07-01T19:00',v:'San Francisco', hc:'1D',    ac:'3BEFIJ'},
-  {id:'r32_l8',m:82, dt:'2026-07-01T15:00',v:'Seattle',       hc:'1G',    ac:'3AEHIJ'},
+  // LEFT SIDE — visual order top to bottom
+  {id:'r32_l1',m:74, dt:'2026-06-29T15:30',v:'Boston',        home:'Germany',     away:'Paraguay'},
+  {id:'r32_l2',m:77, dt:'2026-06-30T16:00',v:'New York/NJ',   home:'France',      away:'Sweden'},
+  {id:'r32_l3',m:73, dt:'2026-06-28T14:00',v:'Los Angeles',   home:'South Africa',away:'Canada'},
+  {id:'r32_l4',m:75, dt:'2026-06-29T21:00',v:'Monterrey',     home:'Netherlands', away:'Morocco'},
+  {id:'r32_l5',m:83, dt:'2026-07-02T18:00',v:'Toronto',       home:'Portugal',    away:'Croatia'},
+  {id:'r32_l6',m:84, dt:'2026-07-02T14:00',v:'Los Angeles',   home:'Spain',       away:'Austria'},
+  {id:'r32_l7',m:81, dt:'2026-07-01T19:00',v:'San Francisco', home:'USA',         away:'Bosnia & Herz.'},
+  {id:'r32_l8',m:82, dt:'2026-07-01T15:00',v:'Seattle',       home:'Belgium',     away:'Senegal'},
   // RIGHT SIDE — visual order top to bottom
-  {id:'r32_r1',m:76, dt:'2026-06-29T12:00',v:'Houston',       hc:'1C',    ac:'2F'},
-  {id:'r32_r2',m:78, dt:'2026-06-30T16:00',v:'Dallas',        hc:'2E',    ac:'2I'},
-  {id:'r32_r3',m:79, dt:'2026-06-30T20:00',v:'Mexico City',   hc:'1A',    ac:'3CEFHI'},
-  {id:'r32_r4',m:80, dt:'2026-07-01T11:00',v:'Atlanta',       hc:'1L',    ac:'3EHIJK'},
-  {id:'r32_r5',m:86, dt:'2026-07-03T17:00',v:'Miami',         hc:'1J',    ac:'2H'},
-  {id:'r32_r6',m:88, dt:'2026-07-03T13:00',v:'Dallas',        hc:'2D',    ac:'2G'},
-  {id:'r32_r7',m:85, dt:'2026-07-02T21:00',v:'Vancouver',     hc:'1B',    ac:'3EFGIJ'},
-  {id:'r32_r8',m:87, dt:'2026-07-03T20:30',v:'Kansas City',   hc:'1K',    ac:'3DEIJL'},
+  {id:'r32_r1',m:76, dt:'2026-06-29T13:00',v:'Houston',       home:'Brazil',      away:'Japan'},
+  {id:'r32_r2',m:78, dt:'2026-06-30T12:00',v:'Dallas',        home:'Ivory Coast', away:'Norway'},
+  {id:'r32_r3',m:79, dt:'2026-06-30T20:00',v:'Mexico City',   home:'Mexico',      away:'Ecuador'},
+  {id:'r32_r4',m:80, dt:'2026-07-01T11:00',v:'Atlanta',       home:'England',     away:'Congo DR'},
+  {id:'r32_r5',m:86, dt:'2026-07-03T17:00',v:'Miami',         home:'Argentina',   away:'Cape Verde'},
+  {id:'r32_r6',m:88, dt:'2026-07-03T13:00',v:'Dallas',        home:'Australia',   away:'Egypt'},
+  {id:'r32_r7',m:85, dt:'2026-07-02T21:00',v:'Vancouver',     home:'Switzerland', away:'Algeria'},
+  {id:'r32_r8',m:87, dt:'2026-07-03T20:30',v:'Kansas City',   home:'Colombia',    away:'Ghana'},
 ];
 // R16 — official FIFA bracket flow:
 // M89(W74+W77)→Philadelphia, M90(W73+W75)→Houston
@@ -1014,6 +1014,9 @@ function groupStandings(){
 // Resolve a slot code to team name or placeholder label
 function resolveSlot(code, st, thirds3rd, thirdMap){
   if(!code)return {name:'',label:'TBD'};
+  // Plain team name (confirmed bracket fixture)
+  const directTeam=TEAMS.find(t=>t.name===code);
+  if(directTeam)return {name:directTeam.name,flag:directTeam.flag};
   // Group winner: '1A'
   if(/^1[A-L]$/.test(code)){
     const g=code[1], t=st[g]?.[0];
@@ -1152,7 +1155,7 @@ function renderBracket(){
   // ── LEFT SIDE ──────────────────────────────────────────
   const LR32=[R32[0],R32[1],R32[2],R32[3],R32[4],R32[5],R32[6],R32[7]];
   LR32.forEach((m,i)=>{
-    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),LR32x);
+    place(m.id,m.m,m.dt,m.v,res(m.home||m.hc),res(m.away||m.ac),top(0,i),LR32x);
     h+=hLine(top(0,i)+MH/2,LR32x+CW,CN);
   });
   // R16 left — each pairs adjacent rows (0+1→L1, 2+3→L2, 4+5→L3, 6+7→L4)
@@ -1183,7 +1186,7 @@ function renderBracket(){
   // ── RIGHT SIDE (mirror) ────────────────────────────────
   const RR32=[R32[8],R32[9],R32[10],R32[11],R32[12],R32[13],R32[14],R32[15]];
   RR32.forEach((m,i)=>{
-    place(m.id,m.m,m.dt,m.v,res(m.hc),res(m.ac),top(0,i),RR32x);
+    place(m.id,m.m,m.dt,m.v,res(m.home||m.hc),res(m.away||m.ac),top(0,i),RR32x);
     h+=hLine(top(0,i)+MH/2,RR32x-CN,CN);
   });
   const RR16=[R16[4],R16[5],R16[6],R16[7]];
@@ -1247,7 +1250,7 @@ function renderBracket(){
     if(saved)return {name:saved,flag:TEAMS.find(t=>t.name===saved)?.flag||''};
     const r32m=R32.find(r=>r.id===id);
     if(r32m){
-      const code=side==='home'?r32m.hc:r32m.ac;
+      const code=side==='home'?(r32m.home||r32m.hc):(r32m.away||r32m.ac);
       const resolved=resolveSlot(code,st,thirds,thirdMap);
       return resolved.name?{name:resolved.name,flag:resolved.flag||''}:{name:'',label:resolved.label||'TBD'};
     }
