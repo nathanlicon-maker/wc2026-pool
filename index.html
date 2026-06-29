@@ -750,11 +750,12 @@ function reCalcKOGoals(){
     const hg=S.bracket[m.id+'_hg'];
     const ag=S.bracket[m.id+'_ag'];
     const hasScore=hg!==undefined&&hg!==''&&ag!==undefined&&ag!=='';
-    if(!hasScore)return;
+    if(!hasScore||!winner)return;
     const stage=R32.find(r=>r.id===m.id)?'r32':R16.find(r=>r.id===m.id)?'r16':QF.find(r=>r.id===m.id)?'qf':SF.find(r=>r.id===m.id)?'sf':'final';
-    if(home&&!teamStage[home])teamStage[home]=stage;
-    if(away&&!teamStage[away])teamStage[away]=stage;
-    if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+    // Loser gets the current stage, winner advances
+    const loser=(winner===home)?away:home;
+    if(loser&&!teamStage[loser])teamStage[loser]=stage;
+    if(nextStage[stage])teamStage[winner]=nextStage[stage];
   });
   const finW=S.bracket[FINAL_M.id+'_winner']||'';
   const finH=S.bracket[FINAL_M.id+'_home']||'';
@@ -770,10 +771,11 @@ function reCalcKOGoals(){
     S.teamStats[team].final=finalStage;
     const reached=['R32','R16','QF','SF','RU','W','3P'];
     const idx=reached.indexOf(finalStage);
-    S.teamStats[team].r32=idx>=0?1:0;
-    S.teamStats[team].r16=idx>=1?1:0;
-    S.teamStats[team].qf =idx>=2?1:0;
-    S.teamStats[team].sf =idx>=3?1:0;
+    // r32=1 means won R32 (reached R16+), r16=1 means won R16 (reached QF+), etc.
+    S.teamStats[team].r32=idx>=1?1:0;
+    S.teamStats[team].r16=idx>=2?1:0;
+    S.teamStats[team].qf =idx>=3?1:0;
+    S.teamStats[team].sf =idx>=4?1:0;
   });
 }
 
@@ -1533,9 +1535,20 @@ function saveBracket(){
       const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
       const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
       const winner=S.bracket[m.id+'_winner'];
-      if(home&&!teamStage[home])teamStage[home]=stage;
-      if(away&&!teamStage[away])teamStage[away]=stage;
-      if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+      const hg=S.bracket[m.id+'_hg'];
+      const ag=S.bracket[m.id+'_ag'];
+      const hasScore=hg!==undefined&&hg!==''&&ag!==undefined&&ag!=='';
+      // Only set stage for teams once the match has a score entered
+      if(hasScore){
+        // Loser stays at this stage, winner advances to next
+        if(winner){
+          const loser=(winner===home)?away:home;
+          if(loser&&!teamStage[loser])teamStage[loser]=stage;
+          if(nextStage[stage])teamStage[winner]=nextStage[stage];
+        } else {
+          // Score entered but no winner yet — don't assign stage flags
+        }
+      }
     });
   });
   const finW=S.bracket['final_winner'],finH=S.bracket['final_home'],finA=S.bracket['final_away'];
@@ -1555,10 +1568,11 @@ function saveBracket(){
     // Derive r32/r16/qf/sf win flags from how far the team advanced
     const reached=['R32','R16','QF','SF','RU','W','3P'];
     const idx=reached.indexOf(finalStage);
-    S.teamStats[team].r32=idx>=0?1:0;
-    S.teamStats[team].r16=idx>=1?1:0;
-    S.teamStats[team].qf =idx>=2?1:0;
-    S.teamStats[team].sf =idx>=3?1:0;
+    // r32=1 means won R32 (reached R16+), r16=1 means won R16 (reached QF+), etc.
+    S.teamStats[team].r32=idx>=1?1:0;
+    S.teamStats[team].r16=idx>=2?1:0;
+    S.teamStats[team].qf =idx>=3?1:0;
+    S.teamStats[team].sf =idx>=4?1:0;
   });
 
   reCalcKOGoals();
@@ -2331,18 +2345,7 @@ function minRemainingPts(teamName){
 function isTeamAlive(teamName){
   const ts=S.teamStats[teamName]||{};
   const fin=ts.final||'';
-  // Eliminated if: exited group stage, OR lost in any KO round (has a final stage but didn't advance further)
-  // A team is still alive if: no final set yet, OR their final is a winning/advancing stage
-  if(['GS','GX'].includes(fin))return false;
-  if(ts.groupExit===1)return false;
-  // If they have a KO stage set, check if they're a loser (R32/R16/QF/SF loser stays at that stage)
-  // Winners advance so their final shows the NEXT stage they reached
-  // A team with final='R32' lost in R32 (they didn't win it — winners get final='R16' or higher)
-  if(['R32','R16','QF','SF'].includes(fin)){
-    // They lost at this stage — eliminated
-    return false;
-  }
-  return true;
+  return !['GS','GX'].includes(fin);
 }
 
 function calcPowerScore(playerName){
@@ -2437,8 +2440,8 @@ function renderPowerRankings(){
         const teamChips=p.teams.map(t=>{
           const alive=isTeamAlive(t.name);
           const pts=calcTeamPts(t.name);
-          return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;background:${alive?'rgba(255,255,255,0.06)':'rgba(255,75,43,0.1)'};border:1px solid ${alive?'rgba(255,255,255,0.1)':'rgba(255,75,43,0.4)'};font-size:10px;">
-            ${t.flag} <span style="color:${alive?'inherit':'var(--coral)'};text-decoration:${alive?'none':'line-through'};opacity:${alive?1:0.7}">${t.name}</span>${alive?'':'<span style="font-size:9px;color:var(--coral);margin-left:2px">✕</span>'}
+          return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;background:${alive?'rgba(255,255,255,0.06)':'rgba(255,75,43,0.07)'};border:1px solid ${alive?'rgba(255,255,255,0.1)':'rgba(255,75,43,0.2)'};font-size:10px;opacity:${alive?1:0.55}">
+            ${t.flag} <span style="${alive?'':'text-decoration:line-through'}">${t.name}</span>
           </span>`;
         }).join('');
         return `<div style="background:var(--card2);border:1px solid ${i===0?col:'rgba(255,255,255,0.1)'};border-radius:10px;padding:12px 13px;${i===0?`border-width:1.5px`:``}">
