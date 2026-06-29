@@ -213,6 +213,7 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="leaderboard" onclick="showTab('leaderboard',this)">🏅 Leaderboard</button>
   <button class="tab-btn" data-tab="scores"      onclick="showTab('scores',this)" style="display:none">📊 Scores</button>
+  <button class="tab-btn" data-tab="koschedule"  onclick="showTab('koschedule',this)">🗓️ KO Schedule</button>
   <button class="tab-btn" data-tab="bracket"     onclick="showTab('bracket',this)">🏆 Bracket</button>
   <button class="tab-btn" data-tab="power"       onclick="showTab('power',this)">⚡ Power Rankings</button>
   <button class="tab-btn" data-tab="standings"   onclick="showTab('standings',this)">📋 Teams</button>
@@ -380,6 +381,11 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
       <div style="font-size:12px;color:var(--muted);margin-top:8px">Thank you for your contribution to nothing.</div>
     </div>
   </div>
+</div>
+
+<!-- KO SCHEDULE -->
+<div id="pane-koschedule" class="pane">
+  <div id="ko-schedule-container"></div>
 </div>
 
 <!-- BRACKET -->
@@ -2499,6 +2505,147 @@ function renderPowerRankings(){
 }
 
 
+function renderKOSchedule(){
+  const el=document.getElementById('ko-schedule-container');
+  if(!el)return;
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M].sort((a,b)=>parseCT(a.dt)-parseCT(b.dt));
+  const now=new Date();
+  const todayStr=now.toDateString();
+  const numP=S.config.players||10;
+  const players=(S.playerNames||[]).slice(0,numP).filter(p=>p.trim());
+
+  function resolveKOTeam(m,side){
+    const saved=gv(m.id+'_'+side);
+    if(saved){const t=TEAMS.find(x=>x.name===saved);return{name:saved,flag:t?.flag||''};}
+    if(m.home&&side==='home'){const t=TEAMS.find(x=>x.name===m.home);if(t)return{name:t.name,flag:t.flag};}
+    if(m.away&&side==='away'){const t=TEAMS.find(x=>x.name===m.away);if(t)return{name:t.name,flag:t.flag};}
+    const f1w=m.f1?gv(m.f1+'_winner'):'';
+    const f2w=m.f2?gv(m.f2+'_winner'):'';
+    if(side==='home'&&f1w){const t=TEAMS.find(x=>x.name===f1w);return{name:f1w,flag:t?.flag||''};}
+    if(side==='away'&&f2w){const t=TEAMS.find(x=>x.name===f2w);return{name:f2w,flag:t?.flag||''};}
+    const roundOf=R32.find(r=>r.id===m.id)?'R32':R16.find(r=>r.id===m.id)?'R16':QF.find(r=>r.id===m.id)?'QF':SF.find(r=>r.id===m.id)?'SF':'';
+    const srcId=side==='home'?m.f1:m.f2;
+    const srcM=srcId?[...R32,...R16,...QF,...SF].find(x=>x.id===srcId):null;
+    const mNum=srcM?.m||'';
+    return{name:'',label:mNum?`Win M${mNum}`:'TBD'};
+  }
+
+  function getRound(m){
+    if(R32.find(r=>r.id===m.id))return{code:'R32',label:'Round of 32',pts:8};
+    if(R16.find(r=>r.id===m.id))return{code:'R16',label:'Round of 16',pts:10};
+    if(QF.find(r=>r.id===m.id))return{code:'QF',label:'Quarter-Final',pts:15};
+    if(SF.find(r=>r.id===m.id))return{code:'SF',label:'Semi-Final',pts:20};
+    if(m.id===FINAL_M.id)return{code:'Final',label:'Final',pts:40};
+    return{code:'3rd',label:'3rd Place',pts:10};
+  }
+
+  function matchCard(m,isToday){
+    const hRes=resolveKOTeam(m,'home');
+    const aRes=resolveKOTeam(m,'away');
+    const hg=gv(m.id+'_hg'), ag=gv(m.id+'_ag');
+    const winner=gv(m.id+'_winner');
+    const pen=gv(m.id+'_pen')==='1';
+    const hasScore=hg!==''&&ag!=='';
+    const rnd=getRound(m);
+    const d=parseCT(m.dt);
+    const isMatchToday=d.toDateString()===todayStr;
+    const isPast=d<now;
+    const timeStr=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago',hour12:true});
+    const hOwner=hRes.name?S.draft[hRes.name]||'':'';
+    const aOwner=aRes.name?S.draft[aRes.name]||'':'';
+    const status=hasScore?'completed':isMatchToday?'today':'upcoming';
+    const borderLeft=status==='completed'?'border-left:3px solid #4a9e6a;':status==='today'?'border-left:3px solid var(--coral);':'';
+    const dot=status==='completed'?'✅':status==='today'?'🔴':'🕐';
+    const statusLabel=status==='completed'?'FT':status==='today'?'LIVE':'Upcoming';
+    // Points earned for pool players
+    let ptsNote='';
+    if(hasScore&&winner){
+      const hgI=parseInt(hg),agI=parseInt(ag);
+      const winnerPts=rnd.pts+(hRes.name===winner?hgI:agI)*2+(pen?5:0);
+      const loserPts=(hRes.name===winner?agI:hgI)*2;
+      const winOwner=hRes.name===winner?hOwner:aOwner;
+      const loseOwner=hRes.name===winner?aOwner:hOwner;
+      const parts=[];
+      if(winOwner)parts.push(`<span style="color:#4a9e6a;font-weight:700">${winOwner} +${winnerPts}</span>`);
+      if(loseOwner&&loserPts>0)parts.push(`<span style="color:var(--muted)">${loseOwner} +${loserPts}</span>`);
+      ptsNote=parts.join(' · ');
+    } else if(!hasScore){
+      ptsNote=`<span style="color:var(--muted);font-size:10px">Win +${rnd.pts} · Goals +2 each${rnd.code==='Final'?' · Champion +40':''}</span>`;
+    }
+    return `<div style="background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:6px;${borderLeft}opacity:${status==='completed'&&!isToday?'0.82':'1'}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;gap:5px">
+          <span style="background:rgba(212,168,67,0.12);color:var(--gold);font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:0.04em">${rnd.code} M${m.m}</span>
+          <span style="font-size:11px;color:var(--muted)">${dot} ${timeStr} CT · ${m.v||''}</span>
+        </span>
+        <span style="font-size:10px;color:${status==='completed'?'#4a9e6a':status==='today'?'var(--coral)':'var(--muted)'};font-weight:700">${statusLabel}${pen?' · Pens':''}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:${winner===hRes.name?'var(--gold)':hRes.name?'var(--white)':'var(--muted)'};font-style:${!hRes.name?'italic':'normal'}">${hRes.flag||''} ${hRes.name||hRes.label||'TBD'}</div>
+          ${hOwner?`<div style="font-size:10px;color:var(--muted)">${hOwner}</div>`:''}
+        </div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--gold);text-align:center;min-width:56px">
+          ${hasScore?`${hg} – ${ag}`:'<span style="font-size:13px;color:var(--muted);font-weight:400">v</span>'}
+        </div>
+        <div style="flex:1;text-align:right">
+          <div style="font-size:13px;font-weight:700;color:${winner===aRes.name?'var(--gold)':aRes.name?'var(--white)':'var(--muted)'};font-style:${!aRes.name?'italic':'normal'}">${aRes.name||aRes.label||'TBD'} ${aRes.flag||''}</div>
+          ${aOwner?`<div style="font-size:10px;color:var(--muted)">${aOwner}</div>`:''}
+        </div>
+      </div>
+      ${ptsNote?`<div style="margin-top:6px;font-size:11px;display:flex;justify-content:space-between">${winner?`<span style="color:var(--muted)">🏆 ${winner} win</span>`:'<span></span>'}<span>${ptsNote}</span></div>`:''}
+    </div>`;
+  }
+
+  // Check for today's matches
+  const todayMatches=allM.filter(m=>parseCT(m.dt).toDateString()===todayStr);
+
+  let html='';
+
+  // TODAY section pinned at top
+  if(todayMatches.length){
+    html+=`<div style="background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.25);border-radius:10px;padding:14px 16px;margin-bottom:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--coral);letter-spacing:0.06em;margin-bottom:10px">🔴 TODAY'S MATCHES</div>
+      ${todayMatches.map(m=>matchCard(m,true)).join('')}
+    </div>`;
+  }
+
+  // Group remaining matches by round then by day
+  const rounds=[
+    {code:'R32',label:'Round of 32',matches:R32},
+    {code:'R16',label:'Round of 16',matches:R16},
+    {code:'QF', label:'Quarter-Finals',matches:QF},
+    {code:'SF', label:'Semi-Finals',matches:SF},
+    {code:'3rd',label:'3rd Place & Final',matches:[THIRD_M,FINAL_M]},
+  ];
+
+  rounds.forEach(({code,label,matches})=>{
+    const sorted=[...matches].sort((a,b)=>parseCT(a.dt)-parseCT(b.dt));
+    html+=`<div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:var(--gold);letter-spacing:0.08em;padding:12px 0 5px;border-bottom:2px solid rgba(212,168,67,0.2);margin-bottom:10px;text-transform:uppercase">${label}</div>`;
+    // Group by day
+    const byDay={};
+    sorted.forEach(m=>{
+      const d=parseCT(m.dt);
+      const isToday=d.toDateString()===todayStr;
+      const dayKey=isToday?'TODAY':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+      if(!byDay[dayKey])byDay[dayKey]=[];
+      byDay[dayKey].push(m);
+    });
+    const days=Object.keys(byDay);
+    // 2-col grid for days
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">`;
+    days.forEach(day=>{
+      html+=`<div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:${day==='TODAY'?'var(--coral)':'var(--gold)'};padding:4px 0 5px;letter-spacing:0.06em">${day}</div>
+        ${byDay[day].map(m=>matchCard(m,false)).join('')}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+
+  el.innerHTML=html;
+}
+
 function showTab(name,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2510,10 +2657,11 @@ function showTab(name,btn){
   if(name==='draft')renderDraft();
   if(name==='admin')renderAdmin();
   if(name==='bracket')renderBracket();
+  if(name==='koschedule')renderKOSchedule();
   if(name==='feedback'){}
   if(name==='power')renderPowerRankings();
 }
-function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();renderMySchedule();}
+function renderAll(){renderLeaderboard();renderScores();renderStandings();renderDraft();renderAdmin();renderMySchedule();renderKOSchedule();}
 function toast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
