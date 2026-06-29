@@ -639,8 +639,10 @@ async function syncRead(){
     if(data.draft)S.draft=data.draft;
     if(data.scores)S.scores=data.scores;
     if(data.teamStats)S.teamStats=data.teamStats;
+    if(data.bracket)S.bracket=data.bracket;
     if(typeof data.draftLocked!=='undefined')S.draftLocked=data.draftLocked;
     S.lastUpdated=data.lastUpdated||new Date().toISOString();
+    reCalcKOGoals();
     saveLocal();
     setSyncStatus('ok','Live — synced ✓');
     updateLastSync();
@@ -648,6 +650,7 @@ async function syncRead(){
   }catch(e){
     setSyncStatus('error','Using cached data — tap ↻ to retry');
     console.error('Read error:',e);
+    reCalcKOGoals();
     renderAll();
   }
   isSyncing=false;
