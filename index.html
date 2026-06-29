@@ -2162,8 +2162,7 @@ function renderAdmin(){
             <select class="draft-select" id="fin-${k}" style="font-size:11px">
               ${['','GS','R32','R16','QF','SF','RU','W'].map(v=>`<option value="${v}"${(ts.final||'')==v?' selected':''}>${v||'Not set'}</option>`).join('')}
             </select></div>
-          <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">KO Goals</div>
-            <input type="number" id="kog-${k}" value="${ts.koGoals||0}" min="0" style="padding:5px;font-size:12px"></div>
+  
           <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Bonus Pts</div>
             <input type="number" id="bon-${k}" value="${ts.bonus||0}" min="0" style="padding:5px;font-size:12px"></div>
           <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Pen Win?</div>
@@ -2205,7 +2204,6 @@ function saveKOGroup(g){
     const ts=S.teamStats[t.name];
     const fin=document.getElementById(`fin-${k}`)?.value||'';
     ts.final=fin;
-    ts.koGoals=parseInt(document.getElementById(`kog-${k}`)?.value)||0;
     ts.bonus=parseInt(document.getElementById(`bon-${k}`)?.value)||0;
     ts.penWin=parseInt(document.getElementById(`pen-${k}`)?.value)||0;
     ts.groupTop=parseInt(document.getElementById(`gtop-${k}`)?.value)||0;
@@ -2227,7 +2225,6 @@ function saveKO(){
     const ts=S.teamStats[t.name];
     const fin=document.getElementById(`fin-${k}`)?.value||'';
     ts.final=fin;
-    ts.koGoals=parseInt(document.getElementById(`kog-${k}`)?.value)||0;
     ts.bonus=parseInt(document.getElementById(`bon-${k}`)?.value)||0;
     ts.penWin=parseInt(document.getElementById(`pen-${k}`)?.value)||0;
     ts.groupTop=parseInt(document.getElementById(`gtop-${k}`)?.value)||0;
