@@ -615,7 +615,7 @@ function parseCT(dtStr){
   const [year, month, day] = datePart.split('-').map(Number);
   const [hour, min] = timePart.split(':').map(Number);
   // Create UTC date (CT + 5hrs = UTC during CDT/summer)
-  return new Date(Date.UTC(year, month-1, day, hour+6, min));
+  return new Date(Date.UTC(year, month-1, day, hour+5, min));
 }
 
 // JSONBIN SYNC — full CORS support, works on all mobile browsers
