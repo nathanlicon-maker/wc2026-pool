@@ -750,11 +750,12 @@ function reCalcKOGoals(){
     const hg=S.bracket[m.id+'_hg'];
     const ag=S.bracket[m.id+'_ag'];
     const hasScore=hg!==undefined&&hg!==''&&ag!==undefined&&ag!=='';
-    if(!hasScore)return;
+    if(!hasScore||!winner)return;
     const stage=R32.find(r=>r.id===m.id)?'r32':R16.find(r=>r.id===m.id)?'r16':QF.find(r=>r.id===m.id)?'qf':SF.find(r=>r.id===m.id)?'sf':'final';
-    if(home&&!teamStage[home])teamStage[home]=stage;
-    if(away&&!teamStage[away])teamStage[away]=stage;
-    if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+    // Loser gets the current stage, winner advances
+    const loser=(winner===home)?away:home;
+    if(loser&&!teamStage[loser])teamStage[loser]=stage;
+    if(nextStage[stage])teamStage[winner]=nextStage[stage];
   });
   const finW=S.bracket[FINAL_M.id+'_winner']||'';
   const finH=S.bracket[FINAL_M.id+'_home']||'';
@@ -770,10 +771,11 @@ function reCalcKOGoals(){
     S.teamStats[team].final=finalStage;
     const reached=['R32','R16','QF','SF','RU','W','3P'];
     const idx=reached.indexOf(finalStage);
-    S.teamStats[team].r32=idx>=0?1:0;
-    S.teamStats[team].r16=idx>=1?1:0;
-    S.teamStats[team].qf =idx>=2?1:0;
-    S.teamStats[team].sf =idx>=3?1:0;
+    // r32=1 means won R32 (reached R16+), r16=1 means won R16 (reached QF+), etc.
+    S.teamStats[team].r32=idx>=1?1:0;
+    S.teamStats[team].r16=idx>=2?1:0;
+    S.teamStats[team].qf =idx>=3?1:0;
+    S.teamStats[team].sf =idx>=4?1:0;
   });
 }
 
@@ -1533,9 +1535,20 @@ function saveBracket(){
       const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
       const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
       const winner=S.bracket[m.id+'_winner'];
-      if(home&&!teamStage[home])teamStage[home]=stage;
-      if(away&&!teamStage[away])teamStage[away]=stage;
-      if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+      const hg=S.bracket[m.id+'_hg'];
+      const ag=S.bracket[m.id+'_ag'];
+      const hasScore=hg!==undefined&&hg!==''&&ag!==undefined&&ag!=='';
+      // Only set stage for teams once the match has a score entered
+      if(hasScore){
+        // Loser stays at this stage, winner advances to next
+        if(winner){
+          const loser=(winner===home)?away:home;
+          if(loser&&!teamStage[loser])teamStage[loser]=stage;
+          if(nextStage[stage])teamStage[winner]=nextStage[stage];
+        } else {
+          // Score entered but no winner yet — don't assign stage flags
+        }
+      }
     });
   });
   const finW=S.bracket['final_winner'],finH=S.bracket['final_home'],finA=S.bracket['final_away'];
@@ -1555,10 +1568,11 @@ function saveBracket(){
     // Derive r32/r16/qf/sf win flags from how far the team advanced
     const reached=['R32','R16','QF','SF','RU','W','3P'];
     const idx=reached.indexOf(finalStage);
-    S.teamStats[team].r32=idx>=0?1:0;
-    S.teamStats[team].r16=idx>=1?1:0;
-    S.teamStats[team].qf =idx>=2?1:0;
-    S.teamStats[team].sf =idx>=3?1:0;
+    // r32=1 means won R32 (reached R16+), r16=1 means won R16 (reached QF+), etc.
+    S.teamStats[team].r32=idx>=1?1:0;
+    S.teamStats[team].r16=idx>=2?1:0;
+    S.teamStats[team].qf =idx>=3?1:0;
+    S.teamStats[team].sf =idx>=4?1:0;
   });
 
   reCalcKOGoals();
