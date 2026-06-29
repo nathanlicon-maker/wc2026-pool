@@ -698,6 +698,32 @@ function saveLocal(){
 }
 function loadLocal(){
   try{const d=localStorage.getItem('wc2026_state');if(d)S=JSON.parse(d);}catch(e){}
+  reCalcKOGoals();
+}
+
+// Recalculate koGoals and penWin for all teams from bracket scores
+// This ensures stale manually-entered values never persist
+function reCalcKOGoals(){
+  if(!S.bracket)return;
+  const allM=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+  const koGoals={},penWins={};
+  allM.forEach(m=>{
+    const hg=parseInt(S.bracket[m.id+'_hg']||'');
+    const ag=parseInt(S.bracket[m.id+'_ag']||'');
+    const home=S.bracket[m.id+'_home']||(m.home||'');
+    const away=S.bracket[m.id+'_away']||(m.away||'');
+    const winner=S.bracket[m.id+'_winner']||'';
+    const pen=S.bracket[m.id+'_pen']==='1';
+    if(!isNaN(hg)&&home)koGoals[home]=(koGoals[home]||0)+hg;
+    if(!isNaN(ag)&&away)koGoals[away]=(koGoals[away]||0)+ag;
+    if(pen&&winner)penWins[winner]=(penWins[winner]||0)+1;
+  });
+  // Reset all teams to 0 first, then apply bracket-derived values
+  TEAMS.forEach(t=>{
+    if(!S.teamStats[t.name])S.teamStats[t.name]={};
+    S.teamStats[t.name].koGoals=koGoals[t.name]||0;
+    S.teamStats[t.name].penWin=penWins[t.name]||0;
+  });
 }
 
 // (setup modal removed - URL is hardcoded)
