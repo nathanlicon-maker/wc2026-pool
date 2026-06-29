@@ -1487,7 +1487,15 @@ function saveBracket(){
   const stageVal={r32:'R32',r16:'R16',qf:'QF',sf:'SF',final:'RU',W:'W',RU:'RU','3P':'3P'};
   Object.entries(teamStage).forEach(([team,stage])=>{
     if(!S.teamStats[team])S.teamStats[team]={};
-    S.teamStats[team].final=stageVal[stage]||stage;
+    const finalStage=stageVal[stage]||stage;
+    S.teamStats[team].final=finalStage;
+    // Derive r32/r16/qf/sf win flags from how far the team advanced
+    const reached=['R32','R16','QF','SF','RU','W','3P'];
+    const idx=reached.indexOf(finalStage);
+    S.teamStats[team].r32=idx>=0?1:0;
+    S.teamStats[team].r16=idx>=1?1:0;
+    S.teamStats[team].qf =idx>=2?1:0;
+    S.teamStats[team].sf =idx>=3?1:0;
   });
 
   saveLocal();syncWrite();
@@ -2204,10 +2212,10 @@ function saveKOGroup(g){
     ts.groupExit=parseInt(document.getElementById(`gext-${k}`)?.value)||0;
     const fin2=ts.final;
     ts.r32=0;ts.r16=0;ts.qf=0;ts.sf=0;
-    if(['R32','R16','QF','SF','RU','W'].includes(fin2))ts.r32=1;
-    if(['R16','QF','SF','RU','W'].includes(fin2))ts.r16=1;
-    if(['QF','SF','RU','W'].includes(fin2))ts.qf=1;
-    if(['SF','RU','W'].includes(fin2))ts.sf=1;
+    if(['R32','R16','QF','SF','RU','W','3P'].includes(fin2))ts.r32=1;
+    if(['R16','QF','SF','RU','W','3P'].includes(fin2))ts.r16=1;
+    if(['QF','SF','RU','W','3P'].includes(fin2))ts.qf=1;
+    if(['SF','RU','W','3P'].includes(fin2))ts.sf=1;
   });
   saveLocal();syncWrite();
   renderLeaderboard();renderStandings();toast(`Group ${g} saved \u2713`);
@@ -2226,10 +2234,10 @@ function saveKO(){
     ts.groupExit=parseInt(document.getElementById(`gext-${k}`)?.value)||0;
     // Cascade wins
     ts.r32=0;ts.r16=0;ts.qf=0;ts.sf=0;
-    if(['R32','R16','QF','SF','RU','W'].includes(fin))ts.r32=1;
-    if(['R16','QF','SF','RU','W'].includes(fin))ts.r16=1;
-    if(['QF','SF','RU','W'].includes(fin))ts.qf=1;
-    if(['SF','RU','W'].includes(fin))ts.sf=1;
+    if(['R32','R16','QF','SF','RU','W','3P'].includes(fin))ts.r32=1;
+    if(['R16','QF','SF','RU','W','3P'].includes(fin))ts.r16=1;
+    if(['QF','SF','RU','W','3P'].includes(fin))ts.qf=1;
+    if(['SF','RU','W','3P'].includes(fin))ts.sf=1;
   });
   saveLocal();syncWrite();
   renderLeaderboard();renderStandings();toast('KO results saved & synced ✓');
