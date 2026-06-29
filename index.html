@@ -1522,21 +1522,7 @@ function saveBracket(){
   if(SF[1]){const w=S.bracket[SF[1].id+'_winner']||'';if(w)S.bracket['final_away']=w;}
   S.bracket.champion=S.bracket['final_winner']||'';
 
-  // Step 3: Tally KO goals and pen wins per team
-  const koGoals={},penWins={};
-  allM.forEach(m=>{
-    const hg=parseInt(S.bracket[m.id+'_hg']||'');
-    const ag=parseInt(S.bracket[m.id+'_ag']||'');
-    const home=S.bracket[m.id+'_home']||gv(m.id+'_home');
-    const away=S.bracket[m.id+'_away']||gv(m.id+'_away');
-    const winner=S.bracket[m.id+'_winner'];
-    const pen=S.bracket[m.id+'_pen']==='1';
-    if(!isNaN(hg)&&home)koGoals[home]=(koGoals[home]||0)+hg;
-    if(!isNaN(ag)&&away)koGoals[away]=(koGoals[away]||0)+ag;
-    if(pen&&winner)penWins[winner]=(penWins[winner]||0)+1;
-  });
-  Object.entries(koGoals).forEach(([t,g])=>{if(!S.teamStats[t])S.teamStats[t]={};S.teamStats[t].koGoals=g;});
-  Object.entries(penWins).forEach(([t,p])=>{if(!S.teamStats[t])S.teamStats[t]={};S.teamStats[t].penWin=p;});
+  // Step 3: KO goals/penWins are handled by reCalcKOGoals() on every load — skip here
 
   // Step 4: Auto-set KO stage reached per team
   const teamStage={};
@@ -1575,8 +1561,9 @@ function saveBracket(){
     S.teamStats[team].sf =idx>=3?1:0;
   });
 
+  reCalcKOGoals();
   saveLocal();syncWrite();
-  renderBracket();
+  renderBracket();renderLeaderboard();
   toast('🏆 KO results saved & synced ✓');
 }
 
