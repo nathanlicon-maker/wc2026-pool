@@ -2356,6 +2356,85 @@ function renderPowerRankings(){
 
   let html='';
 
+  // ── TOP 3 PROJECTION ───────────────────────────────────────────────
+  const leaderboard=players.map(p=>({name:p,...calcPowerScore(p)}))
+    .sort((a,b)=>b.currentPts-a.currentPts);
+  const top3=leaderboard.slice(0,3);
+  const maxCurrPts=leaderboard[0]?.currentPts||1;
+  const medals=['🥇','🥈','🥉'];
+  const medalColors=['#c9a227','#9e9e9e','#cd7f32'];
+  const prizePool=Math.round((S.config.buyin||50)*(S.config.players||10));
+  const prizes=[Math.round(prizePool*0.65),Math.round(prizePool*0.25),Math.round(prizePool*0.10)];
+
+  // Insight pills
+  const leader2=leaderboard[0];
+  const gap1to2=leaderboard[0]&&leaderboard[1]?(leaderboard[0].currentPts-leaderboard[1].currentPts):0;
+  const mostAlivePlayer=leaderboard.reduce((a,b)=>a.aliveCount>b.aliveCount?a:b,leaderboard[0]);
+  const highCeilPlayer=leaderboard.reduce((a,b)=>a.ceiling>b.ceiling?a:b,leaderboard[0]);
+  const insightPills=[];
+  if(leader2)insightPills.push({text:`${leader2.name} leads — ${leader2.aliveCount} teams alive`,cls:'hot'});
+  if(gap1to2<25&&gap1to2>=0&&leaderboard[1])insightPills.push({text:`${leaderboard[1].name} only ${gap1to2} pts back`,cls:'risk'});
+  if(highCeilPlayer&&highCeilPlayer.name!==leader2?.name)insightPills.push({text:`${highCeilPlayer.name} has highest ceiling`,cls:'neutral'});
+  else insightPills.push({text:`${leaderboard.length} players still in contention`,cls:'neutral'});
+
+  const pillColors={
+    hot:{bg:'rgba(255,107,53,0.12)',border:'rgba(255,107,53,0.35)',color:'#FF6B35'},
+    risk:{bg:'rgba(212,168,67,0.1)',border:'rgba(212,168,67,0.35)',color:'#c9a227'},
+    neutral:{bg:'rgba(255,255,255,0.06)',border:'rgba(255,255,255,0.12)',color:'var(--muted)'}
+  };
+
+  html+=`<div style="background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:16px 18px;margin-bottom:20px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--gold);letter-spacing:0.05em;margin-bottom:10px">
+      🏆 LIKELY TO FINISH TOP 3
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      ${insightPills.map(p=>{const c=pillColors[p.cls];return `<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:${c.bg};border:1px solid ${c.border};color:${c.color}">${p.text}</span>`;}).join('')}
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      ${top3.map((p,i)=>{
+        const col=medalColors[i];
+        const teamChips=p.teams.map(t=>{
+          const alive=isTeamAlive(t.name);
+          const pts=calcTeamPts(t.name);
+          return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:5px;background:${alive?'rgba(255,255,255,0.06)':'rgba(255,75,43,0.07)'};border:1px solid ${alive?'rgba(255,255,255,0.1)':'rgba(255,75,43,0.2)'};font-size:10px;opacity:${alive?1:0.55}">
+            ${t.flag} <span style="${alive?'':'text-decoration:line-through'}">${t.name}</span>
+          </span>`;
+        }).join('');
+        return `<div style="background:var(--card2);border:1px solid ${i===0?col:'rgba(255,255,255,0.1)'};border-radius:10px;padding:12px 13px;${i===0?`border-width:1.5px`:``}">
+          <div style="font-size:20px;margin-bottom:4px">${medals[i]}</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px">${i===0?'1ST PLACE':i===1?'2ND PLACE':'3RD PLACE'}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:21px;font-weight:800;color:var(--white);margin-bottom:2px">${p.name}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:${col};line-height:1">${Math.round(p.currentPts)} <span style="font-size:13px;font-weight:400;color:var(--muted)">pts</span></div>
+          <div style="font-size:11px;color:var(--muted);margin:5px 0 8px">
+            Ceiling <span style="color:#5a9e6a;font-weight:700">${Math.round(p.ceiling)}</span>
+            &nbsp;·&nbsp; Prize <span style="color:#5a9e6a;font-weight:700">$${prizes[i]}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px">${teamChips}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-bottom:6px;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.06em">CURRENT STANDINGS</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${leaderboard.map((p,i)=>{
+        const barPct=Math.round((p.currentPts/maxCurrPts)*100);
+        const ceilPct=Math.round((p.ceiling/Math.max(...leaderboard.map(x=>x.ceiling)))*100);
+        const col=i<3?medalColors[i]:'rgba(255,255,255,0.25)';
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:12px">
+          <span style="min-width:14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:${i<3?col:'var(--muted)'};">${i+1}</span>
+          <span style="min-width:58px;font-weight:${i<3?700:400};color:${i<3?'var(--white)':'var(--muted)'}">${p.name}</span>
+          <div style="flex:1;height:14px;background:rgba(255,255,255,0.05);border-radius:3px;position:relative;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;height:100%;width:${ceilPct}%;background:rgba(212,168,67,0.1);border-radius:3px"></div>
+            <div style="position:absolute;left:0;top:0;height:100%;width:${barPct}%;background:${col};border-radius:3px"></div>
+          </div>
+          <span style="min-width:36px;text-align:right;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:${i<3?col:'var(--muted)'}">${Math.round(p.currentPts)}</span>
+          <span style="font-size:10px;color:var(--muted);min-width:44px">↑${Math.round(p.ceiling)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
   // ── BAR CHART ──────────────────────────────────────────────────────
   html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:20px">
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:0.04em;margin-bottom:14px">
