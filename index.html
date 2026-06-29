@@ -727,11 +727,53 @@ function reCalcKOGoals(){
     if(!isNaN(ag)&&away)koGoals[away]=(koGoals[away]||0)+ag;
     if(pen&&winner)penWins[winner]=(penWins[winner]||0)+1;
   });
-  // Reset all teams to 0 first, then apply bracket-derived values
+  // Reset all teams' KO flags to 0 first — prevents stale manual values persisting
   TEAMS.forEach(t=>{
     if(!S.teamStats[t.name])S.teamStats[t.name]={};
     S.teamStats[t.name].koGoals=koGoals[t.name]||0;
     S.teamStats[t.name].penWin=penWins[t.name]||0;
+    S.teamStats[t.name].r32=0;
+    S.teamStats[t.name].r16=0;
+    S.teamStats[t.name].qf=0;
+    S.teamStats[t.name].sf=0;
+    S.teamStats[t.name].final='';
+  });
+  // Re-apply stage flags from bracket results
+  const allMStage=[...R32,...R16,...QF,...SF,FINAL_M,THIRD_M];
+  const teamStage={};
+  const nextStage={r32:'r16',r16:'qf',qf:'sf',sf:'final'};
+  const stageVal={r32:'R32',r16:'R16',qf:'QF',sf:'SF',final:'RU',W:'W',RU:'RU','3P':'3P'};
+  allMStage.forEach(m=>{
+    const home=S.bracket[m.id+'_home']||(m.home||'');
+    const away=S.bracket[m.id+'_away']||(m.away||'');
+    const winner=S.bracket[m.id+'_winner']||'';
+    const hg=S.bracket[m.id+'_hg'];
+    const ag=S.bracket[m.id+'_ag'];
+    const hasScore=hg!==undefined&&hg!==''&&ag!==undefined&&ag!=='';
+    if(!hasScore)return;
+    const stage=R32.find(r=>r.id===m.id)?'r32':R16.find(r=>r.id===m.id)?'r16':QF.find(r=>r.id===m.id)?'qf':SF.find(r=>r.id===m.id)?'sf':'final';
+    if(home&&!teamStage[home])teamStage[home]=stage;
+    if(away&&!teamStage[away])teamStage[away]=stage;
+    if(winner&&nextStage[stage])teamStage[winner]=nextStage[stage];
+  });
+  const finW=S.bracket[FINAL_M.id+'_winner']||'';
+  const finH=S.bracket[FINAL_M.id+'_home']||'';
+  const finA=S.bracket[FINAL_M.id+'_away']||'';
+  const thirdW=S.bracket[THIRD_M.id+'_winner']||'';
+  const thirdH=S.bracket[THIRD_M.id+'_home']||'';
+  const thirdA=S.bracket[THIRD_M.id+'_away']||'';
+  if(finW){teamStage[finW]='W';const ru=finW===finH?finA:finH;if(ru)teamStage[ru]='RU';}
+  if(thirdW){teamStage[thirdW]='3P';const tL=thirdW===thirdH?thirdA:thirdH;if(tL)teamStage[tL]='sf';}
+  Object.entries(teamStage).forEach(([team,stage])=>{
+    if(!S.teamStats[team])S.teamStats[team]={};
+    const finalStage=stageVal[stage]||stage;
+    S.teamStats[team].final=finalStage;
+    const reached=['R32','R16','QF','SF','RU','W','3P'];
+    const idx=reached.indexOf(finalStage);
+    S.teamStats[team].r32=idx>=0?1:0;
+    S.teamStats[team].r16=idx>=1?1:0;
+    S.teamStats[team].qf =idx>=2?1:0;
+    S.teamStats[team].sf =idx>=3?1:0;
   });
 }
 
