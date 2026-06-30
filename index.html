@@ -1020,11 +1020,10 @@ function renderDailyRecap(){
     const chips=p.teamsPlayed.map(({team,pts,label,result,stage,round,pen,bonus})=>{
       const resultColor=result==='W'?'#5a9e6a':result==='D'?'var(--muted)':'var(--coral)';
       const stageBadge=stage==='KO'?` <span style="font-size:9px;color:var(--gold)">${round}${pen?' 🥅':''}</span>`:'';
-      const bonusNote=bonus?` <span style="font-size:9px;color:#5a9e6a">(+${bonus} bonus)</span>`:'';
       return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:11px">
         ${team.flag} ${team.name}${stageBadge}
         <span style="font-weight:700;color:${resultColor}">${result} ${label}</span>
-        <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>${bonusNote}
+        <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>
       </span>`;
     }).join('');
     playerHtml+=`
@@ -2702,8 +2701,8 @@ function renderKOSchedule(){
       const winOwner=hRes.name===winner?hOwner:aOwner;
       const loseOwner=hRes.name===winner?aOwner:hOwner;
       const parts=[];
-      if(winOwner)parts.push(`<span style="color:#4a9e6a;font-weight:700">${winOwner} +${winnerPts}${winBonus?` <span style="color:var(--muted);font-weight:400">(+${winBonus} bonus)</span>`:''}</span>`);
-      if(loseOwner&&loserPts>0)parts.push(`<span style="color:var(--muted)">${loseOwner} +${loserPts}${loseBonus?` (+${loseBonus} bonus)`:''}</span>`);
+      if(winOwner)parts.push(`<span style="color:#4a9e6a;font-weight:700">${winOwner} +${winnerPts}</span>`);
+      if(loseOwner&&loserPts>0)parts.push(`<span style="color:var(--muted)">${loseOwner} +${loserPts}</span>`);
       ptsNote=parts.join(' · ');
     } else if(!hasScore){
       ptsNote=`<span style="color:var(--muted);font-size:10px">Win +${rnd.pts} · Goals +2 each${rnd.code==='Final'?' · Champion +40':''}</span>`;
