@@ -1223,7 +1223,7 @@ function teamRow(res,isWin){
     <span style="font-size:11px">${res.flag||t?.flag||'🏳️'}</span>
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;font-weight:${isWin?700:500};color:${isWin?'var(--gold)':'var(--white)'};
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.name}${isDH?' 🌶️':''}</div>
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.name}${t?` <span style="font-size:9px;color:var(--muted);font-weight:400">#${t.rank}</span>`:''}${isDH?' 🌶️':''}</div>
       ${owner?`<div style="font-size:9px;color:var(--muted)">${owner}${pts!==null?' · '+pts+'p':''}</div>`:''}
     </div>
     ${isWin?'<span style="color:var(--gold);font-size:10px">✓</span>':''}
