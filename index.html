@@ -339,9 +339,10 @@ header{background:linear-gradient(135deg,var(--pitch2) 0%,var(--pitch3) 100%);pa
       <div class="rule-row"><span>Runner-Up</span><span class="rv">+20 pts</span></div>
       <div class="rule-row"><span>KO goal scored</span><span class="rv">+2 pts/goal</span></div>
       <div class="rule-row"><span>Penalty shootout win</span><span class="rv">+5 pts</span></div>
+      <div class="rule-row" style="opacity:0.8"><span style="font-size:11px">🐴 Dark Horse teams get ×1.5 on all KO points above</span></div>
     </div>
     <div class="rules-card"><h3>🌶️ Bonuses</h3>
-      <div class="rule-row"><span>Dark Horse (rank &gt;20)</span><span class="rv">×1.5 group pts</span></div>
+      <div class="rule-row"><span>Dark Horse (rank &gt;20)</span><span class="rv">×1.5 group + KO pts</span></div>
       <div class="rule-row"><span>Golden Boot team</span><span class="rv">+25 pts</span></div>
       <div class="rule-row"><span>Golden Glove team</span><span class="rv">+15 pts</span></div>
       <div class="rule-row"><span>Upset win (10+ ranks)</span><span class="rv">+8 pts</span></div>
@@ -795,7 +796,7 @@ function calcTeamPts(name){
   const grpPospts=(gw*5+gd*2+gf*1+cs*3+groupTop*12)*(isDH?1.5:1); 
   const grpNegPts=gl*(-1)+groupExit*(-5); 
   const grpPts=grpPospts+grpNegPts;
-  const koPts=r32*8+r16*10+qf*15+sf*20+(fin==='W'?40:fin==='RU'?20:fin==='3P'?10:0)+koGoals*2+penWin*5;
+  const koPts=(r32*8+r16*10+qf*15+sf*20+(fin==='W'?40:fin==='RU'?20:fin==='3P'?10:0)+koGoals*2+penWin*5)*(isDH?1.5:1);
   return Math.round((grpPts+koPts+bonus)*10)/10;
 }
 function calcPlayerPts(p){return playerTeams(p).reduce((a,t)=>a+calcTeamPts(t.name),0);}
