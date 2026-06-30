@@ -991,19 +991,22 @@ function renderDailyRecap(){
         teamsPlayed.push({team:t,pts:matchPts,label:`${gf}-${ga}`,result:win?'W':draw?'D':'L',stage:'GS'});
       });
 
-      // KO points for today — R32 win (+8), goals (+2ea), pen win (+5)
+      // KO points for today — R32 win (+8), goals (+2ea), pen win (+5), Dark Horse x1.5
       todayKO.filter(m=>(m.home===t.name||m.away===t.name)).forEach(m=>{
         const hg=parseInt(m.hgVal), ag=parseInt(m.agVal);
         const isHome=m.home===t.name;
         const gf=isHome?hg:ag, ga=isHome?ag:hg;
         const won=m.winner===t.name;
         const pen=m.pen&&won;
+        const isDHko=t.rank>(S.config.dh||20);
+        const multKO=isDHko?1.5:1;
         const roundPts={R32:8,R16:10,QF:15,SF:20}[m.round]||0;
         const koGoalPts=gf*2;
         const penPts=pen?5:0;
-        const matchPts=(won?roundPts:0)+koGoalPts+penPts;
+        const teamBonus=(S.teamStats[t.name]||{}).bonus||0;
+        const matchPts=Math.round((((won?roundPts:0)+koGoalPts+penPts)*multKO+teamBonus)*10)/10;
         pts+=matchPts;
-        teamsPlayed.push({team:t,pts:matchPts,label:`${gf}-${ga}`,result:won?'W':'L',stage:'KO',round:m.round,pen});
+        teamsPlayed.push({team:t,pts:matchPts,label:`${gf}-${ga}`,result:won?'W':'L',stage:'KO',round:m.round,pen,bonus:teamBonus});
       });
     });
 
@@ -1014,13 +1017,14 @@ function renderDailyRecap(){
   playerDayPts.forEach((p,i)=>{
     const medals=['🥇','🥈','🥉'];
     const medal=medals[i]||`${i+1}.`;
-    const chips=p.teamsPlayed.map(({team,pts,label,result,stage,round,pen})=>{
+    const chips=p.teamsPlayed.map(({team,pts,label,result,stage,round,pen,bonus})=>{
       const resultColor=result==='W'?'#5a9e6a':result==='D'?'var(--muted)':'var(--coral)';
       const stageBadge=stage==='KO'?` <span style="font-size:9px;color:var(--gold)">${round}${pen?' 🥅':''}</span>`:'';
+      const bonusNote=bonus?` <span style="font-size:9px;color:#5a9e6a">(+${bonus} bonus)</span>`:'';
       return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);font-size:11px">
         ${team.flag} ${team.name}${stageBadge}
         <span style="font-weight:700;color:${resultColor}">${result} ${label}</span>
-        <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>
+        <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:13px">${pts>0?'+':''}${pts}</span>${bonusNote}
       </span>`;
     }).join('');
     playerHtml+=`
@@ -2684,13 +2688,22 @@ function renderKOSchedule(){
     let ptsNote='';
     if(hasScore&&winner){
       const hgI=parseInt(hg),agI=parseInt(ag);
-      const winnerPts=rnd.pts+(hRes.name===winner?hgI:agI)*2+(pen?5:0);
-      const loserPts=(hRes.name===winner?agI:hgI)*2;
+      const winTeam=TEAMS.find(x=>x.name===winner);
+      const loseTeamName=hRes.name===winner?aRes.name:hRes.name;
+      const loseTeam=TEAMS.find(x=>x.name===loseTeamName);
+      const winDH=winTeam&&winTeam.rank>(S.config.dh||20);
+      const loseDH=loseTeam&&loseTeam.rank>(S.config.dh||20);
+      const winMult=winDH?1.5:1;
+      const loseMult=loseDH?1.5:1;
+      const winBonus=(S.teamStats[winner]||{}).bonus||0;
+      const loseBonus=(S.teamStats[loseTeamName]||{}).bonus||0;
+      const winnerPts=Math.round(((rnd.pts+(hRes.name===winner?hgI:agI)*2+(pen?5:0))*winMult+winBonus)*10)/10;
+      const loserPts=Math.round((((hRes.name===winner?agI:hgI)*2)*loseMult+loseBonus)*10)/10;
       const winOwner=hRes.name===winner?hOwner:aOwner;
       const loseOwner=hRes.name===winner?aOwner:hOwner;
       const parts=[];
-      if(winOwner)parts.push(`<span style="color:#4a9e6a;font-weight:700">${winOwner} +${winnerPts}</span>`);
-      if(loseOwner&&loserPts>0)parts.push(`<span style="color:var(--muted)">${loseOwner} +${loserPts}</span>`);
+      if(winOwner)parts.push(`<span style="color:#4a9e6a;font-weight:700">${winOwner} +${winnerPts}${winBonus?` <span style="color:var(--muted);font-weight:400">(+${winBonus} bonus)</span>`:''}</span>`);
+      if(loseOwner&&loserPts>0)parts.push(`<span style="color:var(--muted)">${loseOwner} +${loserPts}${loseBonus?` (+${loseBonus} bonus)`:''}</span>`);
       ptsNote=parts.join(' · ');
     } else if(!hasScore){
       ptsNote=`<span style="color:var(--muted);font-size:10px">Win +${rnd.pts} · Goals +2 each${rnd.code==='Final'?' · Champion +40':''}</span>`;
